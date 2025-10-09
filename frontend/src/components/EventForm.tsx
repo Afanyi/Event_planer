@@ -1,5 +1,6 @@
 import { api } from '../api';
 import type { Participant, Tag } from '../types';
+import React from "react";
 
 export default function EventForm({
                                       tags,
