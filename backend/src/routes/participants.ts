@@ -12,6 +12,11 @@ participants.get('/', asyncHandler(async (_req, res) => {
 participants.post('/', asyncHandler(async (req, res) => {
     const { name, email } = req.body || {};
     if (!name || !email) return res.status(400).json({ error: 'name and email are required' });
+
+    // Prevent duplicate participant names
+    const existing = await Participant.findOne({ name });
+    if (existing) return res.status(400).json({ error: 'Participant name already exists.' });
+
     const created = await Participant.create({ name, email });
     res.status(201).json(created);
 }));
