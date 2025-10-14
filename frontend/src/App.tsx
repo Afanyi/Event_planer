@@ -11,15 +11,22 @@ export default function App() {
     const [events, setEvents] = useState<Event[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [participants, setParticipants] = useState<Participant[]>([]);
+
+    // Filter-States
     const [q, setQ] = useState('');
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
+    const [location, setLocation] = useState('');
+    const [participant, setParticipant] = useState('');
 
     async function load() {
         const params = new URLSearchParams();
         if (q) params.set('q', q);
         if (from) params.set('from', from);
         if (to) params.set('to', to);
+        if (location) params.set('location', location);
+        if (participant) params.set('participant', participant);
+
         setEvents(await api(`/events?${params.toString()}`));
         setTags(await api('/tags'));
         setParticipants(await api('/participants'));
@@ -44,7 +51,19 @@ export default function App() {
                 </div>
             </header>
 
-            <Filters q={q} setQ={setQ} from={from} setFrom={setFrom} to={to} setTo={setTo} onApply={load} />
+            <Filters
+                q={q}
+                setQ={setQ}
+                from={from}
+                setFrom={setFrom}
+                to={to}
+                setTo={setTo}
+                location={location}
+                setLocation={setLocation}
+                participant={participant}
+                setParticipant={setParticipant}
+                onApply={load}
+            />
 
             <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="grid">

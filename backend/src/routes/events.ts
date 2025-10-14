@@ -1,29 +1,74 @@
 import { Router } from 'express';
 import { Event } from '../models/Event';
+import { Participant } from '../models/Participant';
 import { asyncHandler } from '../utils/errors';
 
 export const events = Router();
 
 events.get('/', asyncHandler(async (req, res) => {
-    const { q, from, to } = req.query as any;
+    const { q, from, to, location, participant } = req.query as any;
+
     const filter: any = {};
+
+    // Titelvolltext
     if (q) filter.title = { $regex: String(q), $options: 'i' };
+
+    // Datumsbereich
     if (from || to) {
         filter.date = {};
         if (from) filter.date.$gte = new Date(String(from));
         if (to) filter.date.$lte = new Date(String(to));
     }
-    const result = await Event.find(filter).populate('tags participants').sort({ date: 1 });
+
+    // Standort-Teilstring
+    if (location) {
+        filter.location = { $regex: String(location), $options: 'i' };
+    }
+
+    // Participant-Filter: akzeptiert entweder ObjectId oder Teilstring (Name/Email)
+    if (participant) {
+        const p = String(participant).trim();
+
+        let participantIds: string[] = [];
+        const looksLikeId = /^[0-9a-fA-F]{24}$/.test(p);
+
+        if (looksLikeId) {
+            participantIds = [p];
+        } else {
+            const matches = await Participant.find({
+                $or: [
+                    { name:   { $regex: p, $options: 'i' } },
+                    { email:  { $regex: p, $options: 'i' } },
+                ],
+            }).select('_id');
+            participantIds = matches.map(m => String(m._id));
+        }
+
+        // wenn keine Treffer → leere Ergebnisliste zurückgeben
+        if (participantIds.length === 0) {
+            return res.json([]);
+        }
+        filter.participants = { $in: participantIds };
+    }
+
+    const result = await Event.find(filter)
+        .populate('tags participants')
+        .sort({ date: 1 });
+
     res.json(result);
 }));
 
 events.get('/by-tag/:tagId', asyncHandler(async (req, res) => {
-    const events = await Event.find({ tags: req.params.tagId }).populate('tags participants').sort({ date: 1 });
+    const events = await Event.find({ tags: req.params.tagId })
+        .populate('tags participants')
+        .sort({ date: 1 });
     res.json(events);
 }));
 
 events.get('/by-participant/:participantId', asyncHandler(async (req, res) => {
-    const events = await Event.find({ participants: req.params.participantId }).populate('tags participants').sort({ date: 1 });
+    const events = await Event.find({ participants: req.params.participantId })
+        .populate('tags participants')
+        .sort({ date: 1 });
     res.json(events);
 }));
 
