@@ -1,5 +1,5 @@
-import { api } from '../api';
-import type { Event, Participant, Tag } from '../types';
+import {api} from '../api';
+import type {Event, Participant, Tag} from '../types';
 
 export default function EventList({
                                       events,
@@ -14,45 +14,49 @@ export default function EventList({
 }) {
     async function remove(id: string) {
         if (!confirm('Delete event?')) return;
-        await api(`/events/${id}`, { method: 'DELETE' });
+        await api(`/events/${id}`, {method: 'DELETE'});
         onChanged();
     }
+
     async function addTag(eventId: string, tagId: string) {
-        await api(`/events/${eventId}/tags/${tagId}`, { method: 'POST' });
+        await api(`/events/${eventId}/tags/${tagId}`, {method: 'POST'});
         onChanged();
     }
+
     async function removeTag(eventId: string, tagId: string) {
-        await api(`/events/${eventId}/tags/${tagId}`, { method: 'DELETE' });
+        await api(`/events/${eventId}/tags/${tagId}`, {method: 'DELETE'});
         onChanged();
     }
+
     async function addPart(eventId: string, pid: string) {
-        await api(`/events/${eventId}/participants/${pid}`, { method: 'POST' });
+        await api(`/events/${eventId}/participants/${pid}`, {method: 'POST'});
         onChanged();
     }
+
     async function removePart(eventId: string, pid: string) {
-        await api(`/events/${eventId}/participants/${pid}`, { method: 'DELETE' });
+        await api(`/events/${eventId}/participants/${pid}`, {method: 'DELETE'});
         onChanged();
     }
 
     return (
-        <div className="grid" style={{ gap: 8 }}>
-            <h3 style={{ margin: 0 }}>📋 Events</h3>
-            {events.length === 0 && <p style={{ opacity: 0.7 }}>No events yet. Add one!</p>}
+        <div className="grid" style={{gap: 8}}>
+            <h3 style={{margin: 0}}>📋 Events</h3>
+            {events.length === 0 && <p style={{opacity: 0.7}}>No events yet. Add one!</p>}
 
             {events.map(e => (
-                <div key={e._id} className="card grid" style={{ gap: 8 }}>
-                    <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div key={e._id} className="card grid" style={{gap: 8}}>
+                    <div className="row" style={{justifyContent: 'space-between'}}>
                         <div>
                             <strong>{e.title}</strong>
-                            <div style={{ opacity: 0.8 }}>{new Date(e.date).toLocaleString()}</div>
-                            <div style={{ opacity: 0.8 }}>{e.location}</div>
+                            <div style={{opacity: 0.8}}>{new Date(e.date).toLocaleString()}</div>
+                            <div style={{opacity: 0.8}}>{e.location}</div>
                         </div>
                         <button onClick={() => remove(e._id)}>Delete</button>
                     </div>
 
                     {e.description && <div>{e.description}</div>}
                     {e.imageUrl && (
-                        <img src={e.imageUrl} alt="event" style={{ maxWidth: '100%', borderRadius: 8 }} />
+                        <img src={e.imageUrl} alt="event" style={{maxWidth: '100%', borderRadius: 8}}/>
                     )}
 
                     <div className="row">
@@ -60,7 +64,7 @@ export default function EventList({
                             <span
                                 key={t._id}
                                 className="tag"
-                                style={{ background: t.color }}
+                                style={{background: t.color}}
                                 onClick={() => removeTag(e._id, t._id)}
                                 title="Remove tag"
                             >
