@@ -9,6 +9,8 @@ type Props = {
     setLocation: (v: string) => void;
     participant: string;
     setParticipant: (v: string) => void;
+    tagsFilter: string;                 // NEW
+    setTagsFilter: (v: string) => void; // NEW
     onApply: () => void;
 };
 
@@ -23,6 +25,8 @@ export default function Filters({
                                     setLocation,
                                     participant,
                                     setParticipant,
+                                    tagsFilter,        // NEW
+                                    setTagsFilter,     // NEW
                                     onApply,
                                 }: Props) {
     return (
@@ -52,6 +56,11 @@ export default function Filters({
                     placeholder="Participant…"
                     value={participant}
                     onChange={e => setParticipant(e.target.value)}
+                />
+                <input
+                    placeholder="Tags…"
+                    value={tagsFilter}
+                    onChange={e => setTagsFilter(e.target.value)}
                 />
             </div>
             <button onClick={onApply}>Apply</button>

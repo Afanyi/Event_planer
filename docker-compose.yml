@@ -2,31 +2,57 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
-    ports:
-      - "27017:27017"
+    ports: ["27017:27017"]
     volumes:
       - mongo_data:/data/db
 
   backend:
     build: ./backend
     environment:
-      - MONGO_URI=mongodb://mongo:27017/eventsdb
-      - PORT=4000
-      - CORS_ORIGIN=http://localhost:5173
-    depends_on:
-      - mongo
-    ports:
-      - "4000:4000"
+      MONGO_URI: mongodb://mongo:27017/eventsdb
+      PORT: "4000"
+      CORS_ORIGIN: http://localhost:5173
+    depends_on: [mongo]
+    ports: ["4000:4000"]
+    profiles: ["dev"]
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: http://localhost:4000/api   # vom Browser erreichbar
-    depends_on:
-      - backend
-    ports:
-      - "5173:80"     # Host:5173 -> Container:80 (nginx)
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:4000/api}
+    depends_on: [backend]
+    ports: ["5173:80"]   # Host 5173 -> nginx:80
+    profiles: ["dev"]
+
+  # --- Test-Container OHNE extends/depends_on/ports ---
+  backend-test:
+    build:
+      context: ./backend
+      target: test            # braucht eine "test"-Stage im Dockerfile
+    environment:
+      CI: "true"
+      JEST_JUNIT_OUTPUT_DIR: /reports
+      JEST_JUNIT_OUTPUT_NAME: junit.xml
+      COVERAGE_DIR: /reports/coverage
+    command: sh -lc "npm run test:ci"
+    ports: []
+    profiles: ["test"]
+
+  frontend-test:
+    build:
+      context: ./frontend
+      target: test            # braucht eine "test"-Stage im Dockerfile
+      args:
+        VITE_API_BASE: http://localhost:4000/api
+    environment:
+      CI: "true"
+      JEST_JUNIT_OUTPUT_DIR: /reports
+      JEST_JUNIT_OUTPUT_NAME: junit.xml
+      COVERAGE_DIR: /reports/coverage
+    command: sh -lc "npm run test:ci"
+    ports: []
+    profiles: ["test"]
 
 volumes:
   mongo_data:

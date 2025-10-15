@@ -18,6 +18,7 @@ export default function App() {
     const [to, setTo] = useState('');
     const [location, setLocation] = useState('');
     const [participant, setParticipant] = useState('');
+    const [tagsFilter, setTagsFilter] = useState(''); // NEW
 
     async function load() {
         const params = new URLSearchParams();
@@ -26,6 +27,7 @@ export default function App() {
         if (to) params.set('to', to);
         if (location) params.set('location', location);
         if (participant) params.set('participant', participant);
+        if (tagsFilter) params.set('tags', tagsFilter); // NEW (comma-separated or repeated in UI)
 
         setEvents(await api(`/events?${params.toString()}`));
         setTags(await api('/tags'));
@@ -62,6 +64,8 @@ export default function App() {
                 setLocation={setLocation}
                 participant={participant}
                 setParticipant={setParticipant}
+                tagsFilter={tagsFilter}            // NEW
+                setTagsFilter={setTagsFilter}      // NEW
                 onApply={load}
             />
 
