@@ -1,0 +1,69 @@
+stages: [build]
+
+# ============ BACKEND ============
+
+build_backend_mr:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: "backend/Dockerfile"
+    CONTEXT: "$CI_PROJECT_DIR/backend"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"gitlab-ci-token\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "$CONTEXT" --dockerfile "$DOCKERFILE" --cache=true --cache-repo "$CI_REGISTRY_IMAGE/cache" --no-push
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+build_backend_main:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: "backend/Dockerfile"
+    CONTEXT: "$CI_PROJECT_DIR/backend"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"gitlab-ci-token\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "$CONTEXT" --dockerfile "$DOCKERFILE" --cache=true --cache-repo "$CI_REGISTRY_IMAGE/cache" --destination "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA" --destination "$CI_REGISTRY_IMAGE/backend:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ============ FRONTEND ============
+
+build_frontend_mr:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: "frontend/Dockerfile"
+    CONTEXT: "$CI_PROJECT_DIR/frontend"
+    VITE_API_BASE: "http://localhost:4000/api"   # adjust if needed
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"gitlab-ci-token\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "$CONTEXT" --dockerfile "$DOCKERFILE" --cache=true --cache-repo "$CI_REGISTRY_IMAGE/cache" --build-arg VITE_API_BASE="$VITE_API_BASE" --no-push
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+
+build_frontend_main:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    DOCKERFILE: "frontend/Dockerfile"
+    CONTEXT: "$CI_PROJECT_DIR/frontend"
+    VITE_API_BASE: "http://localhost:4000/api"
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"gitlab-ci-token\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "$CONTEXT" --dockerfile "$DOCKERFILE" --cache=true --cache-repo "$CI_REGISTRY_IMAGE/cache" --build-arg VITE_API_BASE="$VITE_API_BASE" --destination "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA" --destination "$CI_REGISTRY_IMAGE/frontend:latest"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
