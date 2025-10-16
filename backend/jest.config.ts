@@ -1,16 +1,26 @@
 import type { Config } from 'jest';
 
 const config: Config = {
-    preset: 'ts-jest/presets/default-esm',   // ESM + TypeScript
-    testEnvironment: 'jsdom',                // React-Komponenten testen
+    preset: 'ts-jest/presets/default-esm',
+    testEnvironment: 'node',
+    testMatch: [
+        '<rootDir>/tests/**/*.test.ts',
+        '<rootDir>/tests/**/*.int.test.ts'
+    ],
     extensionsToTreatAsEsm: ['.ts', '.tsx'],
-    transform: { '^.+\\.(ts|tsx)$': ['ts-jest', { useESM: true }] },
-    moduleNameMapper: {
-        '^.+\\.(css|less|scss|sass)$': 'identity-obj-proxy' // CSS-Imports stubben
+    globals: {
+        'ts-jest': {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.jest.json',
+            isolatedModules: true
+        }
     },
-    collectCoverageFrom: ['src/**/*.{ts,tsx}'],
-    coverageReporters: ['text', 'text-summary', 'cobertura'], // für GitLab MR-Diff
-    coverageDirectory: process.env.COVERAGE_DIR || 'coverage'
+    collectCoverageFrom: ['<rootDir>/src/**/*.{ts,tsx}'],
+    coverageReporters: ['text', 'text-summary', 'cobertura'],
+    coverageDirectory: '<rootDir>/coverage',
+    moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1'
+    }
 };
 
 export default config;

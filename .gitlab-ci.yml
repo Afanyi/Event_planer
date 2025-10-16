@@ -1,7 +1,64 @@
-stages: [build]
+stages: [test, build]
 
-# ============ BACKEND ============
+# ============ TEST (backend unit tests) ============
+test_backend:
+  stage: test
+  image: node:20-alpine
+  cache:
+    key:
+      files:
+        - backend/package-lock.json
+    paths:
+      - backend/node_modules/
+  before_script:
+    - cd backend
+    - npm ci --no-audit --no-fund
+  script:
+    # Run ONLY unit tests (exclude integration folder & *.int.test.ts)
+    - npm run test:ci -- --testPathIgnorePatterns="(tests/integration/|\.int\.test\.ts$)"
+  artifacts:
+    when: always
+    reports:
+      junit: backend/reports/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage/cobertura-coverage.xml
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
 
+# ============ TEST (backend integration tests) ============
+test_backend_int:
+  stage: test
+  image: node:20        # Debian-based; good for mongodb-memory-server if used
+  cache:
+    key:
+      files:
+        - backend/package-lock.json
+    paths:
+      - backend/node_modules/
+  before_script:
+    - cd backend
+    - npm ci --no-audit --no-fund
+    # JUnit file path relative to current working dir (backend/)
+    - export JEST_JUNIT_OUTPUT=reports/junit-int.xml
+  script:
+    # Run ONLY integration tests under tests/integration OR named *.int.test.ts
+    - npx jest --ci --coverage --reporters=default --reporters=jest-junit --testPathPattern="(tests/integration/|\.int\.test\.ts$)" --coverageDirectory coverage-int --passWithNoTests
+  artifacts:
+    when: always
+    reports:
+      junit: backend/reports/junit-int.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage-int/cobertura-coverage.xml
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# ============ BACKEND (Kaniko) ============
 build_backend_mr:
   stage: build
   image:
@@ -33,8 +90,7 @@ build_backend_main:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-# ============ FRONTEND ============
-
+# ============ FRONTEND (Kaniko) ============
 build_frontend_mr:
   stage: build
   image:
@@ -43,7 +99,7 @@ build_frontend_mr:
   variables:
     DOCKERFILE: "frontend/Dockerfile"
     CONTEXT: "$CI_PROJECT_DIR/frontend"
-    VITE_API_BASE: "http://localhost:4000/api"   # adjust if needed
+    VITE_API_BASE: "http://localhost:4000/api"
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"gitlab-ci-token\",\"password\":\"$CI_JOB_TOKEN\"}}}" > /kaniko/.docker/config.json
