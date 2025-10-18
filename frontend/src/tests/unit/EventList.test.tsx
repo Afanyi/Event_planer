@@ -102,10 +102,7 @@ describe('EventList (unit)', () => {
 
         renderComp();
 
-        // Find the tag select (the one with "+ Add tag…" option)
-        const tagSelect = screen.getByDisplayValue('') as HTMLSelectElement | undefined
-            || screen.getAllByRole('combobox')[0] as HTMLSelectElement;
-        // Choose "Fun" (t2) which is not already attached
+        const [tagSelect] = screen.getAllByRole('combobox') as HTMLSelectElement[];
         fireEvent.change(tagSelect, { target: { value: 't2' } });
 
         await waitFor(() => {
@@ -113,7 +110,6 @@ describe('EventList (unit)', () => {
             expect(onChanged).toHaveBeenCalledTimes(1);
         });
 
-        // Handler resets selectedIndex to 0 -> first option has value ""
         expect(tagSelect.selectedIndex).toBe(0);
     });
 

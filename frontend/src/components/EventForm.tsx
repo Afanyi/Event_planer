@@ -13,24 +13,27 @@ export default function EventForm({
 }) {
     async function create(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        const form = new FormData(e.currentTarget as HTMLFormElement);
+
+        // ✅ capture the form element before awaiting (so reset() never sees null)
+        const formEl = e.currentTarget as HTMLFormElement;
+
+        const form = new FormData(formEl);
         const payload = {
             title: form.get('title'),
             description: form.get('description'),
             location: form.get('location'),
             date: form.get('date'),
             imageUrl: form.get('imageUrl') || '',
-            tags: Array.from(
-                (e.currentTarget as HTMLFormElement).querySelectorAll('input[name=tags]:checked')
-            ).map((i: any) => i.value),
-            participants: Array.from(
-                (e.currentTarget as HTMLFormElement).querySelectorAll('input[name=parts]:checked')
-            ).map((i: any) => i.value),
+            tags: Array.from(formEl.querySelectorAll('input[name=tags]:checked')).map((i: any) => i.value),
+            participants: Array.from(formEl.querySelectorAll('input[name=parts]:checked')).map((i: any) => i.value),
         };
-        await api('/events', {method: 'POST', body: JSON.stringify(payload)});
+        await api('/events', { method: 'POST', body: JSON.stringify(payload) });
         onCreated();
-        (e.currentTarget as HTMLFormElement).reset();
+
+        // ✅ use the captured ref
+        formEl.reset();
     }
+
 
     return (
         <div className="card">

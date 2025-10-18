@@ -20,12 +20,21 @@ describe('ParticipantList (unit)', () => {
 
     it('renders header and existing participants', () => {
         renderComp();
+
         expect(screen.getByText('👥 Participants')).toBeInTheDocument();
-        expect(screen.getByText('Alice')).toBeInTheDocument();
-        expect(screen.getByText('Bob')).toBeInTheDocument();
-        // email is inside a span
-        expect(screen.getByText(/alice@example.com/i)).toBeInTheDocument();
+
+        // Get the <li> items explicitly and assert their content
+        const items = screen.getAllByRole('listitem');
+        expect(items.length).toBeGreaterThanOrEqual(2);
+
+        expect(items[0]).toHaveTextContent(/^Alice\b/);
+        expect(items[0]).toHaveTextContent(/alice@example\.com/i);
+
+        expect(items[1]).toHaveTextContent(/^Bob\b/);
+        expect(items[1]).toHaveTextContent(/bob@example\.com/i);
     });
+
+
 
     it('submits successfully: calls api, resets form, and triggers onChanged', async () => {
         (api as jest.Mock).mockResolvedValue({ ok: true });

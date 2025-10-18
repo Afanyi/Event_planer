@@ -58,6 +58,66 @@ test_backend_int:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
 
+# ============ TEST (frontend unit tests) ============
+test_frontend:
+  stage: test
+  image: node:20-alpine
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/node_modules/
+  before_script:
+    - cd frontend
+    - npm ci --no-audit --no-fund
+    # JUnit file path relative to current working dir (frontend/)
+    # jest-junit default in package.json writes to reports/junit.xml
+  script:
+    # Run ONLY unit tests in src/tests/unit
+    - npm run test:ci -- --testPathPattern="src/tests/unit"
+  artifacts:
+    when: always
+    reports:
+      junit: frontend/reports/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage/cobertura-coverage.xml
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# ============ TEST (frontend integration tests) ============
+test_frontend_int:
+  stage: test
+  image: node:20
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/node_modules/
+  before_script:
+    - cd frontend
+    - npm ci --no-audit --no-fund
+    # JUnit file path relative to current working dir (frontend/)
+    - export JEST_JUNIT_OUTPUT=reports/junit-int.xml
+  script:
+    # Run ONLY integration tests under src/tests/integration
+    - npx jest --ci --coverage --reporters=default --reporters=jest-junit --testPathPattern="src/tests/integration" --coverageDirectory coverage-int --passWithNoTests
+  artifacts:
+    when: always
+    reports:
+      junit: frontend/reports/junit-int.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage-int/cobertura-coverage.xml
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
 # ============ BACKEND (Kaniko) ============
 build_backend_mr:
   stage: build
