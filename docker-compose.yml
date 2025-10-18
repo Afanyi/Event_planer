@@ -2,9 +2,17 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
-    ports: ["27017:27017"]
+    # Wenn du von Host/Compass zugreifen willst, nutze 27018 auf Loopback:
+    ports:
+      - "127.0.0.1:27018:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   backend:
     build: ./backend
@@ -12,24 +20,31 @@ services:
       MONGO_URI: mongodb://mongo:27017/eventsdb
       PORT: "4000"
       CORS_ORIGIN: http://localhost:5173
-    depends_on: [mongo]
-    ports: ["4000:4000"]
-    profiles: ["dev"]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    # (keine profiles -> startet standardmäßig mit)
 
   frontend:
     build:
       context: ./frontend
       args:
         VITE_API_BASE: ${VITE_API_BASE:-http://localhost:4000/api}
-    depends_on: [backend]
-    ports: ["5173:80"]   # Host 5173 -> nginx:80
-    profiles: ["dev"]
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"   # Host 5173 -> nginx:80
+    restart: unless-stopped
+    # (keine profiles -> startet standardmäßig mit)
 
-  # --- Test-Container OHNE extends/depends_on/ports ---
+  # --- Test-Container (nur bei Bedarf manuell starten) ---
   backend-test:
     build:
       context: ./backend
-      target: test            # braucht eine "test"-Stage im Dockerfile
+    #  target: test  # nur aktivieren, wenn Dockerfile eine "test"-Stage hat
     environment:
       CI: "true"
       JEST_JUNIT_OUTPUT_DIR: /reports
@@ -37,12 +52,12 @@ services:
       COVERAGE_DIR: /reports/coverage
     command: sh -lc "npm run test:ci"
     ports: []
-    profiles: ["test"]
+    # kein profile -> läuft nur, wenn du ihn explizit aufrufst
 
   frontend-test:
     build:
       context: ./frontend
-      target: test            # braucht eine "test"-Stage im Dockerfile
+      #  target: test
       args:
         VITE_API_BASE: http://localhost:4000/api
     environment:
@@ -52,7 +67,6 @@ services:
       COVERAGE_DIR: /reports/coverage
     command: sh -lc "npm run test:ci"
     ports: []
-    profiles: ["test"]
 
 volumes:
   mongo_data:

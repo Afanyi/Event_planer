@@ -2,6 +2,14 @@ import { api } from '../api';
 import type { Participant } from '../types';
 import { useState } from 'react';
 
+// ==== Regex-Definitionen ====
+// Name: "Vorname Nachname" (jeweils groß beginnend, erlaubt Bindestrich, Umlaute)
+const NAME_REGEX =
+    /^([A-ZÄÖÜ][a-zäöüß]+(?:-[A-ZÄÖÜ][a-zäöüß]+)?)(\s+[A-ZÄÖÜ][a-zäöüß]+(?:-[A-ZÄÖÜ][a-zäöüß]+)?)+$/u;
+
+// Simple, robuste E-Mail-Prüfung (kein RFC-Overkill, aber praxistauglich)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ParticipantList({
                                             participants,
                                             onChanged,
@@ -14,21 +22,40 @@ export default function ParticipantList({
 
     async function addP(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        if (submitting) return;
         setError(null);
         setSubmitting(true);
 
         try {
             const formEl = e.currentTarget;
-            const form = new FormData(e.currentTarget);
+            const form = new FormData(formEl);
+
+            const name = String(form.get('name') ?? '').trim();
+            const email = String(form.get('email') ?? '').trim();
+
+            // ---- Clientseitige Validierung mit Regex ----
+            if (!NAME_REGEX.test(name)) {
+                setError({
+                    code: 400,
+                    message:
+                        'Ungültiger Name. Verwende bitte Vor- und Nachname (z. B. „Max Mustermann“). Bindestriche sind erlaubt.',
+                });
+                return;
+            }
+            if (!EMAIL_REGEX.test(email)) {
+                setError({
+                    code: 400,
+                    message: 'Ungültige E-Mail-Adresse.',
+                });
+                return;
+            }
+
             const res: unknown = await api('/participants', {
                 method: 'POST',
-                body: JSON.stringify({
-                    name: form.get('name'),
-                    email: form.get('email'),
-                }),
+                body: JSON.stringify({ name, email }),
             });
 
-            // If api() returns a fetch Response, we can read exact HTTP status + backend message
+            // Wenn api() eine fetch-Response zurückgibt -> HTTP-Status auswerten
             if (res && typeof res === 'object' && 'ok' in (res as Response)) {
                 const response = res as Response;
 
@@ -48,24 +75,23 @@ export default function ParticipantList({
                 }
                 formEl.reset();
                 onChanged();
-                //e.currentTarget.reset();
                 return;
             }
 
-            // Fallback: if api() returns parsed JSON directly with an error field
+            // Fallback: api() lieferte direkt JSON mit error-Feld
             if (res && typeof res === 'object' && 'error' in (res as any)) {
                 setError({
-                    code: 400, // best-effort when no Response is available
+                    code: 400,
                     message: (res as any).error || 'Bad Request',
                 });
                 return;
             }
+
             formEl.reset();
             onChanged();
-            //e.currentTarget.reset();
         } catch (err: any) {
             setError({
-                code: 0, // network/unknown
+                code: 0,
                 message: err?.message || 'Network error',
             });
         } finally {
@@ -91,17 +117,32 @@ export default function ParticipantList({
                         fontSize: 14,
                     }}
                 >
-                    ⚠️ {error.code ? `HTTP ${error.code}: ` : ''}{error.message}
+                    ⚠️ {error.code ? `HTTP ${error.code}: ` : ''}
+                    {error.message}
                 </div>
             )}
 
-            <form className="row" onSubmit={addP}>
-                <input name="name" placeholder="Name" required />
-                <input name="email" placeholder="Email" required />
+            <form className="row" onSubmit={addP} noValidate>
+                <input
+                    name="name"
+                    placeholder="Name"
+                    required
+                    // HTML5-Validierung als Ergänzung
+                    pattern={NAME_REGEX.source}
+                    title="Vor- und Nachname, jeweils groß beginnend (z. B. „Max Mustermann“)."
+                />
+                <input
+                    name="email"
+                    placeholder="Email"
+                    required
+                    pattern={EMAIL_REGEX.source}
+                    title="Gültige E-Mail-Adresse (z. B. name@example.com)."
+                />
                 <button disabled={submitting}>{submitting ? 'Adding…' : 'Add'}</button>
             </form>
+
             <ul>
-                {participants.map(p => (
+                {participants.map((p) => (
                     <li key={p._id}>
                         {p.name} — <span style={{ opacity: 0.7 }}>{p.email}</span>
                     </li>
