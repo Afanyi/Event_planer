@@ -23,7 +23,6 @@ describe('ParticipantList (unit)', () => {
 
         expect(screen.getByText('👥 Participants')).toBeInTheDocument();
 
-        // Get the <li> items explicitly and assert their content
         const items = screen.getAllByRole('listitem');
         expect(items.length).toBeGreaterThanOrEqual(2);
 
@@ -33,8 +32,6 @@ describe('ParticipantList (unit)', () => {
         expect(items[1]).toHaveTextContent(/^Bob\b/);
         expect(items[1]).toHaveTextContent(/bob@example\.com/i);
     });
-
-
 
     it('submits successfully: calls api, resets form, and triggers onChanged', async () => {
         (api as jest.Mock).mockResolvedValue({ ok: true });
@@ -46,22 +43,23 @@ describe('ParticipantList (unit)', () => {
         const addBtn     = screen.getByRole('button', { name: 'Add' });
         const form       = addBtn.closest('form')!;
 
-        fireEvent.change(nameInput,  { target: { value: 'Charlie' } });
+        // Gültige Eingaben (passen zur Server-/pattern-Validierung)
+        fireEvent.change(nameInput,  { target: { value: 'Charlie Brown' } });
         fireEvent.change(emailInput, { target: { value: 'charlie@example.com' } });
 
         fireEvent.submit(form);
 
-        // During submit
-        expect(addBtn).toBeDisabled();
-        expect(addBtn).toHaveTextContent('Adding…');
+        // Der Disabled-Zustand kann asynchron gesetzt werden -> mit waitFor prüfen
+        await waitFor(() => {
+            expect(addBtn).toBeDisabled();
+            expect(addBtn).toHaveTextContent('Adding…');
+        });
 
         await waitFor(() => expect(mockOnChanged).toHaveBeenCalledTimes(1));
 
-        // After submit
+        // Nach erfolgreichem Submit
         expect(addBtn).not.toBeDisabled();
         expect(addBtn).toHaveTextContent('Add');
-
-        // Form reset (both inputs empty after reset)
         expect(nameInput.value).toBe('');
         expect(emailInput.value).toBe('');
     });
@@ -71,15 +69,18 @@ describe('ParticipantList (unit)', () => {
             ok: false,
             status: 409,
             statusText: 'Conflict',
-            json: async () => ({ error: 'Duplicate participant' })
+            json: async () => ({ error: 'Duplicate participant' }),
         });
 
         renderComp();
 
         const addBtn = screen.getByRole('button', { name: 'Add' });
         const form   = addBtn.closest('form')!;
-        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'Alice' } });
+
+        // Gültiger Name + E-Mail, damit NICHT die Name-Validierung triggert
+        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'Alice Example' } });
         fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'alice@example.com' } });
+
         fireEvent.submit(form);
 
         await waitFor(() => {
@@ -92,14 +93,18 @@ describe('ParticipantList (unit)', () => {
     });
 
     it('shows fallback API error when api() returns an object with { error }', async () => {
+        // Komponente unterstützt auch { error: ... } als Rückgabe
         (api as jest.Mock).mockResolvedValue({ error: 'Invalid email' });
 
         renderComp();
 
         const addBtn = screen.getByRole('button', { name: 'Add' });
         const form   = addBtn.closest('form')!;
-        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'X' } });
-        fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'x' } });
+
+        // Wichtig: gültiger Name + formal gültige E-Mail, damit der Submit wirklich ausgeführt wird
+        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'Max Mustermann' } });
+        fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'max@example.com' } });
+
         fireEvent.submit(form);
 
         await waitFor(() => {
@@ -115,8 +120,10 @@ describe('ParticipantList (unit)', () => {
 
         const addBtn = screen.getByRole('button', { name: 'Add' });
         const form   = addBtn.closest('form')!;
-        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'Dana' } });
+
+        fireEvent.change(screen.getByPlaceholderText('Name'),  { target: { value: 'Dana Scully' } });
         fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'dana@example.com' } });
+
         fireEvent.submit(form);
 
         await waitFor(() => {
