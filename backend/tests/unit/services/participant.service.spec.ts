@@ -1,8 +1,14 @@
 import { ParticipantService } from '../../../src/services/participant.service';
 
+const chain = (result: any) => ({
+    sort: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(result),
+});
+
 jest.mock('src/models/Participant', () => ({
     Participant: {
-        find: jest.fn().mockResolvedValue([]),
+        find: jest.fn(),
         findById: jest.fn(),
         findOne: jest.fn(),
         create: jest.fn(),
@@ -17,17 +23,17 @@ describe('ParticipantService', () => {
     beforeEach(() => jest.clearAllMocks());
 
     test('list() returns array', async () => {
-        (Participant.find as any).mockResolvedValue([{ _id: 'p1', name: 'Alex' }]);
+        (Participant.find as any).mockReturnValue(chain([{ _id: 'p1', name: 'Alex' }]));
         const out = await ParticipantService.list();
         expect(out[0].name).toBe('Alex');
     });
 
     test('get() returns participant or 404', async () => {
-        (Participant.findById as any).mockResolvedValue({ _id: 'p2', name: 'Sam' });
+        (Participant.findById as any).mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'p2', name: 'Sam' }) });
         const ok = await ParticipantService.get('6562a1c4e9e6f1f1f1f1f1f1');
         expect(ok.name).toBe('Sam');
 
-        (Participant.findById as any).mockResolvedValue(null);
+        (Participant.findById as any).mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
         await expect(ParticipantService.get('6562a1c4e9e6f1f1f1f1f1f1')).rejects.toThrow('Participant not found');
     });
 

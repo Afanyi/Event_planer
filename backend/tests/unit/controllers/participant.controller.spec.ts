@@ -1,5 +1,5 @@
 import { ParticipantController } from '../../../src/controllers/participant.controller';
-import { mockReq, mockRes } from '../../__helpers__/express';
+import { mockReq, mockRes, mockNext } from '../../__helpers__/express';
 
 jest.mock('src/services/participant.service', () => ({
     ParticipantService: {
@@ -17,37 +17,47 @@ describe('ParticipantController', () => {
 
     test('list -> 200', async () => {
         ParticipantService.list.mockResolvedValue([{ _id: 'p1' }]);
+        const req = mockReq();
         const res = mockRes();
-        await ParticipantController.list({} as any, res as any);
+        const next = mockNext();
+        await ParticipantController.list(req as any, res as any, next as any);
         expect(res.json).toHaveBeenCalledWith([{ _id: 'p1' }]);
     });
 
     test('get -> 200', async () => {
         ParticipantService.get.mockResolvedValue({ _id: 'p2' });
+        const req = mockReq({ id: 'p2' });
         const res = mockRes();
-        await ParticipantController.get({ params: { id: 'p2' } } as any, res as any);
+        const next = mockNext();
+        await ParticipantController.get(req as any, res as any, next as any);
         expect(ParticipantService.get).toHaveBeenCalledWith('p2');
     });
 
     test('create -> 201', async () => {
         ParticipantService.create.mockResolvedValue({ _id: 'p3' });
+        const req = mockReq({}, { name: 'Sam', email: 's@x.io' });
         const res = mockRes();
-        await ParticipantController.create({ body: { name: 'Sam', email: 's@x.io' } } as any, res as any);
+        const next = mockNext();
+        await ParticipantController.create(req as any, res as any, next as any);
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith({ _id: 'p3' });
     });
 
     test('update -> 200', async () => {
         ParticipantService.update.mockResolvedValue({ _id: 'p4', name: 'Neo' });
+        const req = mockReq({ id: 'p4' }, { name: 'Neo' });
         const res = mockRes();
-        await ParticipantController.update({ params: { id: 'p4' }, body: { name: 'Neo' } } as any, res as any);
+        const next = mockNext();
+        await ParticipantController.update(req as any, res as any, next as any);
         expect(ParticipantService.update).toHaveBeenCalledWith('p4', { name: 'Neo' });
     });
 
     test('remove -> 200', async () => {
         ParticipantService.remove.mockResolvedValue({ ok: true });
+        const req = mockReq({ id: 'p5' });
         const res = mockRes();
-        await ParticipantController.remove({ params: { id: 'p5' } } as any, res as any);
+        const next = mockNext();
+        await ParticipantController.remove(req as any, res as any, next as any);
         expect(ParticipantService.remove).toHaveBeenCalledWith('p5');
     });
 });

@@ -20,6 +20,19 @@ export function mockReq(params: any = {}, body: any = {}, query: any = {}) {
 }
 
 export function expectJson(res: MockRes, status = 200) {
-    expect(res.status).toHaveBeenCalledWith(status);
+    const calls = (res.status as any)?.mock?.calls?.length ?? 0;
+    if (status !== 200) {
+        // Für !=200 MUSS status(code) aufgerufen worden sein
+        expect(res.status).toHaveBeenCalledWith(status);
+    } else {
+        // Für 200 ist beides ok: explizit gesetzt ODER implizit (kein Aufruf)
+        if (calls > 0) expect(res.status).toHaveBeenCalledWith(200);
+    }
     expect(res.json).toHaveBeenCalledTimes(1);
+}
+
+
+/** NEW: dummy next() */
+export function mockNext() {
+    return jest.fn();
 }

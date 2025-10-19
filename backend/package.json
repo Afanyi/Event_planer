@@ -6,11 +6,12 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "jest --config jest.config.ts",
-    "test:watch": "jest --watch --config jest.config.ts",
-    "test:int": "jest --config jest.config.ts",
-    "test:int:watch": "jest --watch --config jest.config.ts",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit --config jest.config.ts"
+    "test": "jest -c jest.config.ts --passWithNoTests",
+    "test:watch": "jest -c jest.config.ts --watch",
+    "test:unit": "jest -c jest.config.ts --runInBand",
+    "test:int": "jest -c jest.int.config.ts --runInBand",
+    "test:int:watch": "jest -c jest.int.config.ts --watch",
+    "test:ci": "npm run test:unit && npm run test:int"
   },
   "dependencies": {
     "cors": "^2.8.5",

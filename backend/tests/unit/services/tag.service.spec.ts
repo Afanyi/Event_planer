@@ -1,10 +1,16 @@
 import { TagService } from '../../../src/services/tag.service';
 
+const chain = (result: any) => ({
+    sort: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(result),
+});
+
 jest.mock('src/models/Tag', () => ({
     Tag: {
-        find: jest.fn().mockResolvedValue([]),
-        findById: jest.fn().mockResolvedValue(null),
-        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn(),
+        findById: jest.fn(),
+        findOne: jest.fn(),
         create: jest.fn(),
         findByIdAndUpdate: jest.fn(),
         findByIdAndDelete: jest.fn(),
@@ -17,17 +23,17 @@ describe('TagService', () => {
     beforeEach(() => jest.clearAllMocks());
 
     test('list() returns array', async () => {
-        (Tag.find as any).mockResolvedValue([{ _id: 't1', name: 'work' }]);
+        (Tag.find as any).mockReturnValue(chain([{ _id: 't1', name: 'work' }]));
         const res = await TagService.list();
         expect(res).toHaveLength(1);
     });
 
     test('get() returns tag or 404', async () => {
-        (Tag.findById as any).mockResolvedValue({ _id: 't1', name: 'work' });
+        (Tag.findById as any).mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 't1', name: 'work' }) });
         const ok = await TagService.get('6562a1c4e9e6f1f1f1f1f1f1');
         expect(ok.name).toBe('work');
 
-        (Tag.findById as any).mockResolvedValue(null);
+        (Tag.findById as any).mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
         await expect(TagService.get('6562a1c4e9e6f1f1f1f1f1f1')).rejects.toThrow('Tag not found');
     });
 

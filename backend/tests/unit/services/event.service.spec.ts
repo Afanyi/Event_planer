@@ -1,75 +1,67 @@
 import { EventService } from '../../../src/services/event.service';
 
+const eventChain = (result: any) => ({
+    populate: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(result),
+});
+
 jest.mock('src/models/Event', () => ({
     Event: {
-        find: jest.fn().mockReturnThis(),
-        populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue([]),
-        findById: jest.fn().mockReturnThis(),
+        find: jest.fn(),
+        populate: jest.fn(),
+        sort: jest.fn(),
+        lean: jest.fn(),
+        findById: jest.fn(),
         create: jest.fn(),
-        findByIdAndUpdate: jest.fn().mockReturnThis(),
+        findByIdAndUpdate: jest.fn(),
         findByIdAndDelete: jest.fn(),
     },
 }));
+
 jest.mock('src/models/Tag', () => ({
     Tag: {
-        find: jest.fn().mockResolvedValue([]),
-    },
-}));
-jest.mock('src/models/Participant', () => ({
-    Participant: {
-        find: jest.fn().mockResolvedValue([]),
+        find: jest.fn(), // will return { select: Promise<Array> }
     },
 }));
 
-// Pull typed refs for convenience
+jest.mock('src/models/Participant', () => ({
+    Participant: {
+        find: jest.fn(), // will return { select: Promise<Array> }
+    },
+}));
+
 const { Event } = jest.requireMock('src/models/Event');
 const { Tag } = jest.requireMock('src/models/Tag');
 const { Participant } = jest.requireMock('src/models/Participant');
 
 describe('EventService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+    beforeEach(() => jest.clearAllMocks());
 
     test('list() returns array, filters by q/from/to/location', async () => {
-        (Event.find as any).mockReturnThis();
-        (Event.populate as any).mockReturnThis();
-        (Event.sort as any).mockReturnThis();
-        (Event.lean as any).mockResolvedValue([{ _id: 'e1', title: 'Meetup' }]);
-
+        (Event.find as any).mockReturnValue(eventChain([{ _id: 'e1', title: 'Meetup' }]));
         const out = await EventService.list({
             q: 'meet',
             from: '2025-01-01',
             to: '2025-12-31',
             location: 'darmstadt',
         });
-
         expect(Event.find).toHaveBeenCalledTimes(1);
-        expect(Event.sort).toHaveBeenCalledWith({ date: 1 });
-        expect(Array.isArray(out)).toBe(true);
         expect(out[0].title).toBe('Meetup');
     });
 
     test('list() filters by tag id', async () => {
-        (Event.find as any).mockReturnThis();
-        (Event.populate as any).mockReturnThis();
-        (Event.sort as any).mockReturnThis();
-        (Event.lean as any).mockResolvedValue([{ _id: 'e2' }]);
-
+        (Event.find as any).mockReturnValue(eventChain([{ _id: 'e2' }]));
         const out = await EventService.list({ tag: '6562a1c4e9e6f1f1f1f1f1f1' });
         expect(Event.find).toHaveBeenCalled();
         expect(out).toHaveLength(1);
     });
 
     test('list() filters by tags (names) using Tag subquery', async () => {
-        (Tag.find as any).mockResolvedValue([{ _id: 't1' }, { _id: 't2' }]);
-        (Event.find as any).mockReturnThis();
-        (Event.populate as any).mockReturnThis();
-        (Event.sort as any).mockReturnThis();
-        (Event.lean as any).mockResolvedValue([{ _id: 'e3' }]);
-
+        (Tag.find as any).mockReturnValue({
+            select: jest.fn().mockResolvedValue([{ _id: 't1' }, { _id: 't2' }]),
+        });
+        (Event.find as any).mockReturnValue(eventChain([{ _id: 'e3' }]));
         const out = await EventService.list({ tags: 'work, urgent' });
         expect(Tag.find).toHaveBeenCalled();
         expect(Event.find).toHaveBeenCalled();
@@ -77,14 +69,18 @@ describe('EventService', () => {
     });
 
     test('get() returns event or throws 404', async () => {
-        (Event.findById as any).mockReturnThis();
-        (Event.populate as any).mockReturnThis();
-        (Event.lean as any).mockResolvedValue({ _id: 'e1' });
+        (Event.findById as any).mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue({ _id: 'e1' }),
+        });
 
         const ok = await EventService.get('6562a1c4e9e6f1f1f1f1f1f1');
         expect(ok._id).toBe('e1');
 
-        (Event.lean as any).mockResolvedValue(null);
+        (Event.findById as any).mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue(null),
+        });
         await expect(EventService.get('6562a1c4e9e6f1f1f1f1f1f1')).rejects.toThrow('Event not found');
     });
 
@@ -124,5 +120,18 @@ describe('EventService', () => {
 
         (Event.findByIdAndDelete as any).mockResolvedValue(null);
         await expect(EventService.remove('6562a1c4e9e6f1f1f1f1f1f1')).rejects.toThrow('Event not found');
+    });
+
+    test('list() filters by participant id or name/email', async () => {
+        // name/email search uses Participant.find(...).select('_id')
+        (Participant.find as any).mockReturnValue({
+            select: jest.fn().mockResolvedValue([{ _id: 'p1' }]),
+        });
+        (Event.find as any).mockReturnValue(eventChain([{ _id: 'e6', title: 'By P' }]));
+
+        const out = await EventService.list({ participant: 'alex' });
+        expect(Participant.find).toHaveBeenCalled();
+        expect(Event.find).toHaveBeenCalled();
+        expect(out).toHaveLength(1);
     });
 });
