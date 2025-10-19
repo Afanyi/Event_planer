@@ -13,16 +13,18 @@ test_backend:
   before_script:
     - cd backend
     - npm ci --no-audit --no-fund
+    # JUnit path for unit tests (matches jest-junit config in package.json)
+    - export JEST_JUNIT_OUTPUT=reports/junit.xml
   script:
-    # Run ONLY unit tests (exclude integration folder & *.int.test.ts)
-    - npm run test:ci -- --testPathIgnorePatterns="(tests/integration/|\.int\.test\.ts$)"
+    # Run unit tests only (jest.config.ts)
+    - npm run test:unit -- --coverageReporters=cobertura
   artifacts:
     when: always
     reports:
       junit: backend/reports/junit.xml
       coverage_report:
         coverage_format: cobertura
-        path: backend/coverage/cobertura-coverage.xml
+        path: backend/coverage/unit/cobertura-coverage.xml
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -31,7 +33,7 @@ test_backend:
 # ============ TEST (backend integration tests) ============
 test_backend_int:
   stage: test
-  image: node:20        # Debian-based; good for mongodb-memory-server if used
+  image: node:20   # Debian-based; needed for mongodb-memory-server download
   cache:
     key:
       files:
@@ -41,18 +43,18 @@ test_backend_int:
   before_script:
     - cd backend
     - npm ci --no-audit --no-fund
-    # JUnit file path relative to current working dir (backend/)
+    # Separate JUnit file for integration tests
     - export JEST_JUNIT_OUTPUT=reports/junit-int.xml
   script:
-    # Run ONLY integration tests under tests/integration OR named *.int.test.ts
-    - npx jest --ci --coverage --reporters=default --reporters=jest-junit --testPathPattern="(tests/integration/|\.int\.test\.ts$)" --coverageDirectory coverage-int --passWithNoTests
+    # Run integration tests only (jest.int.config.ts)
+    - npm run test:int -- --coverageReporters=cobertura
   artifacts:
     when: always
     reports:
       junit: backend/reports/junit-int.xml
       coverage_report:
         coverage_format: cobertura
-        path: backend/coverage-int/cobertura-coverage.xml
+        path: backend/coverage/integration/cobertura-coverage.xml
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
