@@ -1,7 +1,7 @@
 //import request from 'supertest';
 const request = require('supertest');
 import mongoose from 'mongoose';
-import { startTestMongo, stopTestMongo, clearDatabase } from '../setup/mongo';
+import { startTestMongo, stopTestMongo, clearDatabase } from '../__helpers__/db';
 import { createApp } from '../../src/app';
 import { Tag } from '../../src/models/Tag';
 import { Participant } from '../../src/models/Participant';
