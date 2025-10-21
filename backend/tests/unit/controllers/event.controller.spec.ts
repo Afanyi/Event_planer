@@ -50,7 +50,7 @@ describe('EventController', () => {
 
     test('create -> 201', async () => {
         EventService.create.mockResolvedValue({ _id: 'e2' });
-        const req = mockReq({}, { title: 'New', date: '2025-10-10T10:00:00Z' });
+        const req = mockReq({}, { title: 'New', date: '2025-10-10T10:00:00Z',location: 'Frankfurt', });
         const res = mockRes();
         const next = mockNext();
         await EventController.create(req as any, res as any, next as any);

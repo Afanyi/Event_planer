@@ -9,6 +9,8 @@ const TITLE_RE: RegExp =
 // 2–80 Zeichen, . , - / ( ) erlaubt, kein führendes/abschließendes Sonderzeichen
 const LOCATION_RE: RegExp =
     /^[A-Za-zÀ-ÖØ-öø-ÿ0-9](?:[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,\-\/()]+[A-Za-zÀ-ÖØ-öø-ÿ0-9])?$/;
+// Deutsche PLZ (5 Ziffern)
+const PLZ_RE: RegExp = /^\d{5}$/;
 
 function toLocalDatetimeInputValue(d = new Date()): string {
     const pad = (n: number) => `${n}`.padStart(2, '0');
@@ -18,6 +20,10 @@ function toLocalDatetimeInputValue(d = new Date()): string {
     const hh = pad(d.getHours());
     const mi = pad(d.getMinutes());
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function composeLocation(street: string, houseNumber: string, postalCode: string, city: string): string {
+    return `${street} ${houseNumber}, ${postalCode} ${city}`.replace(/\s+/g, ' ').trim();
 }
 
 export default function EventForm({
@@ -36,18 +42,27 @@ export default function EventForm({
         e.preventDefault();
         setError(null);
 
-        const formEl = e.currentTarget;
+        const formEl = e.currentTarget as HTMLFormElement;
         const form = new FormData(formEl);
 
         const title = String(form.get('title') ?? '').trim();
         const description = String(form.get('description') ?? '').trim();
-        const location = String(form.get('location') ?? '').trim();
         const date = String(form.get('date') ?? '').trim();
         const imageUrl = String(form.get('imageUrl') ?? '').trim(); // keine Regex-Validierung
 
+        // Neue Adressfelder
+        const street = String(form.get('street') ?? '').trim();
+        const houseNumber = String(form.get('houseNumber') ?? '').trim();
+        const postalCode = String(form.get('postalCode') ?? '').trim();
+        const city = String(form.get('city') ?? '').trim();
+
+        // Inputs für Validierungsfeedback
         const titleInput = formEl.elements.namedItem('title') as HTMLInputElement | null;
-        const locInput = formEl.elements.namedItem('location') as HTMLInputElement | null;
         const dateInput = formEl.elements.namedItem('date') as HTMLInputElement | null;
+        const streetInput = formEl.elements.namedItem('street') as HTMLInputElement | null;
+        const houseInput = formEl.elements.namedItem('houseNumber') as HTMLInputElement | null;
+        const plzInput = formEl.elements.namedItem('postalCode') as HTMLInputElement | null;
+        const cityInput = formEl.elements.namedItem('city') as HTMLInputElement | null;
 
         // ===== Programmatic Validierung =====
         if (title.length < 3 || title.length > 80 || !TITLE_RE.test(title)) {
@@ -60,13 +75,52 @@ export default function EventForm({
             return;
         }
 
-        if (location && (location.length < 2 || location.length > 80 || !LOCATION_RE.test(location))) {
-            const msg =
-                'Ungültiger Ort. 2–80 Zeichen; Buchstaben/Ziffern sowie . , - / ( ) erlaubt; keine führenden/abschließenden Sonderzeichen.';
+        // Street
+        if (street.length < 2 || street.length > 80) {
+            const msg = 'Straße: 2–80 Zeichen.';
             setError({ message: msg });
-            locInput?.setCustomValidity(msg);
-            locInput?.reportValidity();
-            locInput?.setCustomValidity('');
+            streetInput?.setCustomValidity(msg);
+            streetInput?.reportValidity();
+            streetInput?.setCustomValidity('');
+            return;
+        }
+        // House number
+        if (houseNumber.length < 1 || houseNumber.length > 10) {
+            const msg = 'Hausnummer: 1–10 Zeichen.';
+            setError({ message: msg });
+            houseInput?.setCustomValidity(msg);
+            houseInput?.reportValidity();
+            houseInput?.setCustomValidity('');
+            return;
+        }
+        // PLZ
+        if (!PLZ_RE.test(postalCode)) {
+            const msg = 'Bitte eine gültige 5-stellige PLZ eingeben.';
+            setError({ message: msg });
+            plzInput?.setCustomValidity(msg);
+            plzInput?.reportValidity();
+            plzInput?.setCustomValidity('');
+            return;
+        }
+        // City
+        if (city.length < 2 || city.length > 80) {
+            const msg = 'Stadt: 2–80 Zeichen.';
+            setError({ message: msg });
+            cityInput?.setCustomValidity(msg);
+            cityInput?.reportValidity();
+            cityInput?.setCustomValidity('');
+            return;
+        }
+
+        const location = composeLocation(street, houseNumber, postalCode, city);
+        if (location.length < 2 || location.length > 80 || !LOCATION_RE.test(location)) {
+            const msg =
+                'Ungültige Adresse. Erlaubt sind Buchstaben/Ziffern sowie . , - / ( ); keine führenden/abschließenden Sonderzeichen.';
+            setError({ message: msg });
+            // Fokussiere das erste Feld (Straße) bei Adressfehlern
+            streetInput?.setCustomValidity(msg);
+            streetInput?.reportValidity();
+            streetInput?.setCustomValidity('');
             return;
         }
 
@@ -92,7 +146,12 @@ export default function EventForm({
         const payload = {
             title,
             description,
+            // Wichtig: kombinierte Adresse und Einzelteile mitsenden
             location,
+            street,
+            houseNumber,
+            postalCode,
+            city,
             date,
             imageUrl: imageUrl || '',
             tags: Array.from(
@@ -151,17 +210,48 @@ export default function EventForm({
                     />
                 </div>
 
-                <div className="row">
+                {/* Adresse: 4 Felder */}
+                <div className="row" style={{ gap: 8 }}>
                     <input
-                        name="location"
-                        placeholder="Location"
-                        style={{ flex: 1 }}
+                        name="street"
+                        placeholder="Straße (z. B. Musterstraße)"
+                        required
                         minLength={2}
                         maxLength={80}
-                        pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9](?:[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,\-\/()]+[A-Za-zÀ-ÖØ-öø-ÿ0-9])?$"
-                        title="2–80 Zeichen; Buchstaben/Ziffern sowie . , - / ( ) erlaubt; keine führenden/abschließenden Sonderzeichen."
+                        style={{ flex: 2 }}
+                        autoComplete="address-line1"
                     />
-                    <input name="imageUrl" placeholder="Image URL" />
+                    <input
+                        name="houseNumber"
+                        placeholder="Nr."
+                        required
+                        minLength={1}
+                        maxLength={10}
+                        style={{ maxWidth: 100 }}
+                        autoComplete="address-line2"
+                    />
+                    <input
+                        name="postalCode"
+                        placeholder="PLZ"
+                        required
+                        pattern="\d{5}"
+                        title="5-stellige deutsche Postleitzahl"
+                        style={{ maxWidth: 120 }}
+                        autoComplete="postal-code"
+                    />
+                    <input
+                        name="city"
+                        placeholder="Stadt (z. B. Berlin)"
+                        required
+                        minLength={2}
+                        maxLength={80}
+                        style={{ flex: 1 }}
+                        autoComplete="address-level2"
+                    />
+                </div>
+
+                <div className="row">
+                    <input name="imageUrl" placeholder="Image URL (optional)" />
                 </div>
 
                 <textarea name="description" placeholder="Description" maxLength={500} title="Max. 500 Zeichen" />
@@ -173,7 +263,7 @@ export default function EventForm({
                         {tags.map((t) => (
                             <label key={t._id} className="row">
                                 <input type="checkbox" name="tags" value={t._id} />{' '}
-                                <span className="tag" style={{ background: t.color }}>
+                                <span className="tag" style={{ background: (t as any).color }}>
                   {t.name}
                 </span>
                             </label>
