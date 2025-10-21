@@ -20,6 +20,7 @@ services:
       MONGO_URI: mongodb://mongo:27017/eventsdb
       PORT: "4000"
       CORS_ORIGIN: http://localhost:5173
+      OWM_API_KEY: 2c97e8e170ad99836a6e37a7fe103b7a
     depends_on:
       mongo:
         condition: service_healthy

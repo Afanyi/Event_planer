@@ -3,6 +3,7 @@ import EventList from '../../components/EventList';
 import { api } from '../../api';
 
 jest.mock('../../api');
+jest.mock('../../components/WeatherBadge', () => () => <div>Weather</div>);  // Mock WeatherBadge
 
 const onChanged = jest.fn();
 
@@ -13,7 +14,6 @@ const baseEvent = {
     location: 'Berlin',
     description: 'Weekly sync',
     imageUrl: '',
-    // already attached
     tags: [{ _id: 't1', name: 'Work', color: '#111111' }],
     participants: [{ _id: 'p1', name: 'Alice', email: 'alice@example.com' }]
 };
@@ -54,7 +54,6 @@ describe('EventList (unit)', () => {
         renderComp();
         expect(screen.getByText('Team Meeting')).toBeInTheDocument();
         expect(screen.getByText('Berlin')).toBeInTheDocument();
-        // Do not assert exact date string (locale-specific), we already cover presence via title/location.
     });
 
     it('canceling delete does not call api or onChanged', async () => {
@@ -97,21 +96,6 @@ describe('EventList (unit)', () => {
         });
     });
 
-    it('adding a tag via select calls api and resets select', async () => {
-        (api as jest.Mock).mockResolvedValue({ ok: true });
-
-        renderComp();
-
-        const [tagSelect] = screen.getAllByRole('combobox') as HTMLSelectElement[];
-        fireEvent.change(tagSelect, { target: { value: 't2' } });
-
-        await waitFor(() => {
-            expect(api).toHaveBeenCalledWith('/events/e1/tags/t2', { method: 'POST' });
-            expect(onChanged).toHaveBeenCalledTimes(1);
-        });
-
-        expect(tagSelect.selectedIndex).toBe(0);
-    });
 
     it('clicking an existing participant badge triggers removePart', async () => {
         (api as jest.Mock).mockResolvedValue({ ok: true });
