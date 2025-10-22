@@ -65,5 +65,78 @@ VITE_API_BASE=http://localhost:4000/api
    # remove db volume too (CAUTION: deletes data)
     docker compose down -v
 
-#### Running Tests
+#### key Parts
+##### Database(MongoDB)
+- Runs MongoDB 7 with a named volume mongo_data for persistence.
+- Exposes MongoDB only on 127.0.0.1:27018 (safe for local use; not public).
+- Healthcheck ensures Mongo is ready before API starts.
+#### backend
+- Express + Mongoose server (TypeScript).
+- Reads DB connection, CORS origin, and OWM_API_KEY from environment.
+- Waits for mongo (healthcheck) and serves API on http://localhost:4000.
+- Freestyle feature uses OWM_API_KEY to compute an optional forecast summary.
+- main components controllers, middleware, models, routes, services, utils
+- folder str
+- 
+- backend/
+    ```bash
+  ├─ reports/
+  ├─ src/
+  │ ├─ controllers/
+  │ ├─ middlewares/
+  │ ├─ models/
+  │ ├─ routes/
+  │ ├─ services/
+  │ ├─ utils/
+  │ ├─ app.ts
+  │ ├─ db.ts
+  │ ├─ index.ts
+  │ └─ types.ts
+  ├─ tests/
+  │ ├─ helpers/
+  │ ├─ integration/
+  │ └─ unit/
+  ├─ .env.example
+  ├─ Dockerfile
+  ├─ jest.config.ts
+  ├─ jest.int.config.ts
+  ├─ package.json
+  ├─ package-lock.json
+  ├─ tsconfig.jest.json
+  └─ tsconfig.json
+
+#### frontend
+- Built with Vite and served by a minimal Nginx image in the resulting container.
+- Uses build arg VITE_API_BASE to configure the API base URL.
+- Serves the app at http://localhost:5173
+- frontend/
+  ```bash
+    ├─ dist/
+    ├─ node_modules/ # Library root
+    ├─ src/
+    │ ├─ components/
+    │ └─ tests/
+    │ ├─ api.ts
+    │ ├─ App.tsx
+    │ ├─ main.tsx
+    │ ├─ setupTests.ts
+    │ ├─ styles.css
+    │ └─ types.ts
+    ├─ Dockerfile
+    ├─ index.html
+    ├─ jest.config.ts
+    ├─ package.json
+    ├─ package-lock.json
+    ├─ tsconfig.json
+    ├─ vite.config.ts
+    └─ vite-env.d.ts
+
+#### backend-test / frontend-test
+- Minimal, ephemeral containers to run CI-style tests (npm run test:ci).
+- Set CI=true and write reports to /reports (mount a host dir to persist).
+
+
+#### volumes
+- mongo_data stores MongoDB data between container restarts.
+
 
