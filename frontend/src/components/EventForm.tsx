@@ -2,16 +2,22 @@ import { api } from '../api';
 import type { Participant, Tag } from '../types';
 import React, { useMemo, useState } from 'react';
 
-// ===== Regex-Konstanten =====
-// 3–80 Zeichen, kein führendes/abschließendes Sonderzeichen, erlaubte Satzzeichen innen
+/* ============================ Regex Validation Rules ============================ */
+// Title: 3–80 characters, no leading/trailing special chars, allows punctuation inside
 const TITLE_RE: RegExp =
     /^[A-Za-zÀ-ÖØ-öø-ÿ0-9](?:[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,:;!?\-()'"\/&]+[A-Za-zÀ-ÖØ-öø-ÿ0-9])?$/;
-// 2–80 Zeichen, . , - / ( ) erlaubt, kein führendes/abschließendes Sonderzeichen
+
+// Location: 2–80 characters, allows . , - / ( ), no leading/trailing special chars
 const LOCATION_RE: RegExp =
     /^[A-Za-zÀ-ÖØ-öø-ÿ0-9](?:[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,\-\/()]+[A-Za-zÀ-ÖØ-öø-ÿ0-9])?$/;
-// Deutsche PLZ (5 Ziffern)
+
+// German postal code (exactly 5 digits)
 const PLZ_RE: RegExp = /^\d{5}$/;
 
+/**
+ * Converts a Date into an HTML5 datetime-local input string.
+ * Example: 2025-10-31T14:05
+ */
 function toLocalDatetimeInputValue(d = new Date()): string {
     const pad = (n: number) => `${n}`.padStart(2, '0');
     const yyyy = d.getFullYear();
@@ -22,10 +28,21 @@ function toLocalDatetimeInputValue(d = new Date()): string {
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
+/**
+ * Builds a full address string from individual parts.
+ * Example: ("Main St", "12", "12345", "Berlin") → "Main St 12, 12345 Berlin"
+ */
 function composeLocation(street: string, houseNumber: string, postalCode: string, city: string): string {
     return `${street} ${houseNumber}, ${postalCode} ${city}`.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * EventForm Component
+ * -------------------
+ * - Used to create new events.
+ * - Includes client-side validation for title, address, postal code, and date.
+ * - Submits data to backend API (`/events`) and resets the form after success.
+ */
 export default function EventForm({
                                       tags,
                                       participants,
@@ -35,9 +52,19 @@ export default function EventForm({
     participants: Participant[];
     onCreated: () => void;
 }) {
+    // Store validation or API error messages
     const [error, setError] = useState<{ code?: number; message: string } | null>(null);
+
+    // Minimum selectable date/time = current local time
     const minDate = useMemo(() => toLocalDatetimeInputValue(), []);
 
+    /**
+     * Handles form submission
+     * -----------------------
+     * - Collects form data manually (using FormData)
+     * - Validates inputs programmatically
+     * - Sends POST request to API if valid
+     */
     async function create(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError(null);
@@ -45,18 +72,19 @@ export default function EventForm({
         const formEl = e.currentTarget as HTMLFormElement;
         const form = new FormData(formEl);
 
+        // Extract and clean input values
         const title = String(form.get('title') ?? '').trim();
         const description = String(form.get('description') ?? '').trim();
         const date = String(form.get('date') ?? '').trim();
-        const imageUrl = String(form.get('imageUrl') ?? '').trim(); // keine Regex-Validierung
+        const imageUrl = String(form.get('imageUrl') ?? '').trim();
 
-        // Neue Adressfelder
+        // Address fields (new)
         const street = String(form.get('street') ?? '').trim();
         const houseNumber = String(form.get('houseNumber') ?? '').trim();
         const postalCode = String(form.get('postalCode') ?? '').trim();
         const city = String(form.get('city') ?? '').trim();
 
-        // Inputs für Validierungsfeedback
+        // For validation feedback (highlight invalid inputs)
         const titleInput = formEl.elements.namedItem('title') as HTMLInputElement | null;
         const dateInput = formEl.elements.namedItem('date') as HTMLInputElement | null;
         const streetInput = formEl.elements.namedItem('street') as HTMLInputElement | null;
@@ -64,10 +92,11 @@ export default function EventForm({
         const plzInput = formEl.elements.namedItem('postalCode') as HTMLInputElement | null;
         const cityInput = formEl.elements.namedItem('city') as HTMLInputElement | null;
 
-        // ===== Programmatic Validierung =====
+        /* ===================== Field-by-field Validation ===================== */
+
+        // Title validation
         if (title.length < 3 || title.length > 80 || !TITLE_RE.test(title)) {
-            const msg =
-                'Ungültiger Titel. 3–80 Zeichen; Buchstaben/Ziffern erlaubt; keine führenden/abschließenden Sonderzeichen.';
+            const msg = 'Invalid title. Must be 3–80 characters, letters/numbers only, no leading/trailing symbols.';
             setError({ message: msg });
             titleInput?.setCustomValidity(msg);
             titleInput?.reportValidity();
@@ -75,36 +104,39 @@ export default function EventForm({
             return;
         }
 
-        // Street
+        // Street validation
         if (street.length < 2 || street.length > 80) {
-            const msg = 'Straße: 2–80 Zeichen.';
+            const msg = 'Street must be 2–80 characters.';
             setError({ message: msg });
             streetInput?.setCustomValidity(msg);
             streetInput?.reportValidity();
             streetInput?.setCustomValidity('');
             return;
         }
-        // House number
+
+        // House number validation
         if (houseNumber.length < 1 || houseNumber.length > 10) {
-            const msg = 'Hausnummer: 1–10 Zeichen.';
+            const msg = 'House number must be 1–10 characters.';
             setError({ message: msg });
             houseInput?.setCustomValidity(msg);
             houseInput?.reportValidity();
             houseInput?.setCustomValidity('');
             return;
         }
-        // PLZ
+
+        // Postal code validation
         if (!PLZ_RE.test(postalCode)) {
-            const msg = 'Bitte eine gültige 5-stellige PLZ eingeben.';
+            const msg = 'Please enter a valid 5-digit German postal code.';
             setError({ message: msg });
             plzInput?.setCustomValidity(msg);
             plzInput?.reportValidity();
             plzInput?.setCustomValidity('');
             return;
         }
-        // City
+
+        // City validation
         if (city.length < 2 || city.length > 80) {
-            const msg = 'Stadt: 2–80 Zeichen.';
+            const msg = 'City must be 2–80 characters.';
             setError({ message: msg });
             cityInput?.setCustomValidity(msg);
             cityInput?.reportValidity();
@@ -112,20 +144,22 @@ export default function EventForm({
             return;
         }
 
+        // Build combined location string
         const location = composeLocation(street, houseNumber, postalCode, city);
         if (location.length < 2 || location.length > 80 || !LOCATION_RE.test(location)) {
             const msg =
-                'Ungültige Adresse. Erlaubt sind Buchstaben/Ziffern sowie . , - / ( ); keine führenden/abschließenden Sonderzeichen.';
+                'Invalid address. Allowed: letters, numbers, . , - / ( ); no leading/trailing symbols.';
             setError({ message: msg });
-            // Fokussiere das erste Feld (Straße) bei Adressfehlern
+            // Focus first address field for feedback
             streetInput?.setCustomValidity(msg);
             streetInput?.reportValidity();
             streetInput?.setCustomValidity('');
             return;
         }
 
+        // Date validation
         if (!date) {
-            const msg = 'Bitte ein Datum/Zeit wählen.';
+            const msg = 'Please select a date and time.';
             setError({ message: msg });
             dateInput?.setCustomValidity(msg);
             dateInput?.reportValidity();
@@ -135,7 +169,7 @@ export default function EventForm({
         const picked = new Date(date);
         const now = new Date();
         if (Number.isFinite(picked.getTime()) && picked.getTime() < now.getTime()) {
-            const msg = 'Datum/Zeit liegt in der Vergangenheit.';
+            const msg = 'The selected date/time is in the past.';
             setError({ message: msg });
             dateInput?.setCustomValidity(msg);
             dateInput?.reportValidity();
@@ -143,10 +177,11 @@ export default function EventForm({
             return;
         }
 
+        /* ===================== Prepare Payload for API ===================== */
         const payload = {
             title,
             description,
-            // Wichtig: kombinierte Adresse und Einzelteile mitsenden
+            // Important: send both full location and its individual components
             location,
             street,
             houseNumber,
@@ -162,15 +197,22 @@ export default function EventForm({
             ).map((i) => i.value),
         };
 
+        // Send POST request to backend
         await api('/events', { method: 'POST', body: JSON.stringify(payload) });
+
+        // Trigger refresh in parent component
         onCreated();
+
+        // Reset form fields
         formEl.reset();
     }
 
+    /* ============================ JSX Markup ============================ */
     return (
         <div className="card">
             <h3>➕ Create Event</h3>
 
+            {/* Display validation or API error messages */}
             {error && (
                 <div
                     role="alert"
@@ -189,7 +231,9 @@ export default function EventForm({
                 </div>
             )}
 
+            {/* Event creation form */}
             <form className="grid" style={{ gap: 8 }} onSubmit={create} noValidate>
+                {/* Title and Date row */}
                 <div className="row">
                     <input
                         name="title"
@@ -198,7 +242,7 @@ export default function EventForm({
                         minLength={3}
                         maxLength={80}
                         pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9](?:[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,:;!?\-()'&\/]+[A-Za-zÀ-ÖØ-öø-ÿ0-9])?$"
-                        title="3–80 Zeichen; Buchstaben/Ziffern; übliche Satzzeichen (.,:;!?-()'&/); keine führenden/abschließenden Sonderzeichen."
+                        title="3–80 characters; letters/numbers; punctuation allowed (.,:;!?-()'&/); no leading/trailing symbols."
                         style={{ flex: 1 }}
                     />
                     <input
@@ -206,15 +250,15 @@ export default function EventForm({
                         type="datetime-local"
                         required
                         min={minDate}
-                        title="Bitte Datum und Zeit auswählen (nicht in der Vergangenheit)."
+                        title="Select a date and time (cannot be in the past)."
                     />
                 </div>
 
-                {/* Adresse: 4 Felder */}
+                {/* Address section (4 fields) */}
                 <div className="row" style={{ gap: 8 }}>
                     <input
                         name="street"
-                        placeholder="Straße (z. B. Musterstraße)"
+                        placeholder="Street (e.g. Main Street)"
                         required
                         minLength={2}
                         maxLength={80}
@@ -223,7 +267,7 @@ export default function EventForm({
                     />
                     <input
                         name="houseNumber"
-                        placeholder="Nr."
+                        placeholder="No."
                         required
                         minLength={1}
                         maxLength={10}
@@ -232,16 +276,16 @@ export default function EventForm({
                     />
                     <input
                         name="postalCode"
-                        placeholder="PLZ"
+                        placeholder="ZIP"
                         required
                         pattern="\d{5}"
-                        title="5-stellige deutsche Postleitzahl"
+                        title="5-digit German postal code"
                         style={{ maxWidth: 120 }}
                         autoComplete="postal-code"
                     />
                     <input
                         name="city"
-                        placeholder="Stadt (z. B. Berlin)"
+                        placeholder="City (e.g. Berlin)"
                         required
                         minLength={2}
                         maxLength={80}
@@ -250,12 +294,20 @@ export default function EventForm({
                     />
                 </div>
 
+                {/* Optional image URL */}
                 <div className="row">
                     <input name="imageUrl" placeholder="Image URL (optional)" />
                 </div>
 
-                <textarea name="description" placeholder="Description" maxLength={500} title="Max. 500 Zeichen" />
+                {/* Description text area */}
+                <textarea
+                    name="description"
+                    placeholder="Description"
+                    maxLength={500}
+                    title="Max. 500 characters"
+                />
 
+                {/* Tags and Participants checkboxes */}
                 <div className="row" style={{ gap: 12 }}>
                     <div>
                         <strong>Tags</strong>
@@ -264,8 +316,8 @@ export default function EventForm({
                             <label key={t._id} className="row">
                                 <input type="checkbox" name="tags" value={t._id} />{' '}
                                 <span className="tag" style={{ background: (t as any).color }}>
-                  {t.name}
-                </span>
+                                    {t.name}
+                                </span>
                             </label>
                         ))}
                     </div>
@@ -281,6 +333,7 @@ export default function EventForm({
                     </div>
                 </div>
 
+                {/* Submit button */}
                 <button type="submit">Create</button>
             </form>
         </div>
