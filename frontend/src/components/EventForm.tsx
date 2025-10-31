@@ -58,6 +58,10 @@ export default function EventForm({
     // Minimum selectable date/time = current local time
     const minDate = useMemo(() => toLocalDatetimeInputValue(), []);
 
+    // Track selected tags and participants for deletion
+    const [selectedTags, setSelectedTags] = useState<string[]>([]); // Track selected tags for deletion
+    const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]); // Track selected participants for deletion
+
     /**
      * Handles form submission
      * -----------------------
@@ -189,12 +193,8 @@ export default function EventForm({
             city,
             date,
             imageUrl: imageUrl || '',
-            tags: Array.from(
-                formEl.querySelectorAll<HTMLInputElement>('input[name=tags]:checked')
-            ).map((i) => i.value),
-            participants: Array.from(
-                formEl.querySelectorAll<HTMLInputElement>('input[name=parts]:checked')
-            ).map((i) => i.value),
+            tags: selectedTags,
+            participants: selectedParticipants,
         };
 
         // Send POST request to backend
@@ -205,6 +205,76 @@ export default function EventForm({
 
         // Reset form fields
         formEl.reset();
+    }
+
+    // Handle tag selection for deletion
+    function toggleTagSelection(tagId: string) {
+        setSelectedTags((prevSelectedTags) =>
+            prevSelectedTags.includes(tagId)
+                ? prevSelectedTags.filter((id) => id !== tagId)
+                : [...prevSelectedTags, tagId]
+        );
+    }
+
+    // Handle participant selection for deletion
+    function toggleParticipantSelection(participantId: string) {
+        setSelectedParticipants((prevSelectedParticipants) =>
+            prevSelectedParticipants.includes(participantId)
+                ? prevSelectedParticipants.filter((id) => id !== participantId)
+                : [...prevSelectedParticipants, participantId]
+        );
+    }
+
+    // Delete selected tags
+    async function deleteSelectedTags() {
+        if (selectedTags.length === 0) {
+            alert('No tags selected for deletion.');
+            return;
+        }
+
+        if (window.confirm(`Are you sure you want to delete ${selectedTags.length} tag(s)?`)) {
+            try {
+                // API call to delete the selected tags
+                await api('/tags', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ ids: selectedTags }),  // Send an array of tag IDs
+                });
+
+                // Clear selected tags after successful deletion
+                setSelectedTags([]);
+                alert('Selected tags have been deleted.');
+                window.location.reload();
+            } catch (error) {
+                console.error('Error deleting selected tags:', error);
+                alert('An error occurred while deleting the tags.');
+            }
+        }
+    }
+
+// Delete selected participants
+    async function deleteSelectedParticipants() {
+        if (selectedParticipants.length === 0) {
+            alert('No participants selected for deletion.');
+            return;
+        }
+
+        if (window.confirm(`Are you sure you want to delete ${selectedParticipants.length} participant(s)?`)) {
+            try {
+                // API call to delete the selected participants
+                await api('/participants', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ ids: selectedParticipants }),  // Send an array of participant IDs
+                });
+
+                // Clear selected participants after successful deletion
+                setSelectedParticipants([]);
+                alert('Selected participants have been deleted.');
+                window.location.reload();
+            } catch (error) {
+                console.error('Error deleting selected participants:', error);
+                alert('An error occurred while deleting the participants.');
+            }
+        }
     }
 
     /* ============================ JSX Markup ============================ */
@@ -314,12 +384,21 @@ export default function EventForm({
                         <br />
                         {tags.map((t) => (
                             <label key={t._id} className="row">
-                                <input type="checkbox" name="tags" value={t._id} />{' '}
+                                <input
+                                    type="checkbox"
+                                    name="tags"
+                                    value={t._id}
+                                    checked={selectedTags.includes(t._id)}
+                                    onChange={() => toggleTagSelection(t._id)}
+                                />
                                 <span className="tag" style={{ background: (t as any).color }}>
                                     {t.name}
                                 </span>
                             </label>
                         ))}
+                        <button type="button" onClick={deleteSelectedTags}>
+                            Delete Selected Tags
+                        </button>
                     </div>
 
                     <div>
@@ -327,9 +406,19 @@ export default function EventForm({
                         <br />
                         {participants.map((p) => (
                             <label key={p._id} className="row">
-                                <input type="checkbox" name="parts" value={p._id} /> {p.name}
+                                <input
+                                    type="checkbox"
+                                    name="participants"
+                                    value={p._id}
+                                    checked={selectedParticipants.includes(p._id)}
+                                    onChange={() => toggleParticipantSelection(p._id)}
+                                />
+                                {p.name}
                             </label>
                         ))}
+                        <button type="button" onClick={deleteSelectedParticipants}>
+                            Delete Selected Participants
+                        </button>
                     </div>
                 </div>
 
