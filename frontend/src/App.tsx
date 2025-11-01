@@ -6,6 +6,7 @@ import EventForm from './components/EventForm';
 import TagList from './components/TagList';
 import ParticipantList from './components/ParticipantList';
 import Filters from './components/Filters';
+import { Modifications } from './components/Modifications'; // Import the Modifications component
 
 export default function App() {
     const [events, setEvents] = useState<Event[]>([]);
@@ -18,7 +19,11 @@ export default function App() {
     const [to, setTo] = useState('');
     const [location, setLocation] = useState('');
     const [participant, setParticipant] = useState('');
-    const [tagsFilter, setTagsFilter] = useState(''); // NEW
+    const [tagsFilter, setTagsFilter] = useState('');
+
+    // Selected tags and participants for deletion
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
 
     async function load() {
         const params = new URLSearchParams();
@@ -27,7 +32,7 @@ export default function App() {
         if (to) params.set('to', to);
         if (location) params.set('location', location);
         if (participant) params.set('participant', participant);
-        if (tagsFilter) params.set('tags', tagsFilter); // NEW (comma-separated or repeated in UI)
+        if (tagsFilter) params.set('tags', tagsFilter);
 
         setEvents(await api(`/events?${params.toString()}`));
         setTags(await api('/tags'));
@@ -64,8 +69,8 @@ export default function App() {
                 setLocation={setLocation}
                 participant={participant}
                 setParticipant={setParticipant}
-                tagsFilter={tagsFilter}            // NEW
-                setTagsFilter={setTagsFilter}      // NEW
+                tagsFilter={tagsFilter}
+                setTagsFilter={setTagsFilter}
                 onApply={load}
             />
 
@@ -80,6 +85,16 @@ export default function App() {
                     <EventList events={events} allTags={tags} allParticipants={participants} onChanged={load} />
                 </div>
             </div>
+
+            {/* Modifications component for tag and participant deletion */}
+            <Modifications
+                tags={tags}
+                participants={participants}
+                selectedTags={selectedTags}
+                selectedParticipants={selectedParticipants}
+                setSelectedTags={setSelectedTags}
+                setSelectedParticipants={setSelectedParticipants}
+            />
         </div>
     );
 }
