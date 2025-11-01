@@ -1,0 +1,28 @@
+.card { padding: 16px; border-radius: 12px; background: #111; color: #eee; }
+.section { margin-top: 20px; }
+.section-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.badge { background:#2a2a2a; border:1px solid #333; border-radius:999px; padding:2px 10px; font-size:12px; color:#aaa; }
+.list { display:grid; gap:6px; margin:8px 0; }
+.row { display:flex; align-items:center; gap:10px; }
+.tag { display:inline-block; padding:2px 8px; border-radius:6px; color:#000; background:#ccc; }
+.muted { color:#9aa0a6; font-size: 0.92rem; }
+.note.warning { background:#3a2d00; color:#ffda6b; border:1px solid #5a4600; padding:8px 10px; border-radius:8px; margin:10px 0; }
+
+.actions { margin-top: 8px; }
+
+.form-grid { display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center; margin-top:10px; }
+.form-grid input { padding:8px 10px; border-radius:8px; border:1px solid #333; background:#1a1a1a; color:#eee; }
+
+.btn { padding:8px 12px; border-radius:10px; border:1px solid #333; background:#222; color:#eee; cursor:pointer; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn.danger { background:#3a0b0b; border-color:#5b1515; }
+.btn.ghost { background:transparent; border-color:#444; }
+
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal { width:min(520px, 92vw); background:#151515; border:1px solid #333; border-radius:12px; padding:16px; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+.toast { position:fixed; right:16px; bottom:16px; padding:10px 14px; border-radius:10px; border:1px solid #333; background:#202124; color:#e8eaed; z-index:1100; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+.toast.success { border-color:#1f5130; background:#0c2716; color:#b7f7cd; }
+.toast.error { border-color:#5b1a1a; background:#2a0d0d; color:#f4b3b3; }
+.toast.info { border-color:#1f3551; background:#0d172a; color:#b3d4f4; }

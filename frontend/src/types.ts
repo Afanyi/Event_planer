@@ -1,53 +1,57 @@
-// frontend/src/types.ts
-
-/** Einfache ID- und Ref-Typen */
-export type Id = string;
-export type Ref<T> = Id | T;
+/** Simple ID and Ref Types */
+export type Id = string;   // ID type is just a string
+export type Ref<T> = Id | T; // Ref can be either an ID (string) or a populated object of type T
 
 /* =========================
- * Domänen-Modelle (Frontend)
+ * Domain Models (Frontend)
  * ========================= */
 
+/**
+ * Represents a Tag that can be associated with events.
+ * - Optional color for the tag.
+ * - Must have an ID and name.
+ */
 export interface Tag {
-    color?: string;
-    _id: Id;
-    name: string;
-}
-
-export interface Participant {
-    _id: Id;
-    name: string;
-    email?: string;
+    color?: string;    // Optional color for the tag
+    _id: Id;          // Unique ID for the tag
+    name: string;     // Name of the tag
 }
 
 /**
- * Event wie es im Frontend genutzt wird.
- * - `tags`/`participants` können als IDs (nicht-populiert) oder als Objekte (populiert) vorliegen.
- * - Adresse als kombinierter String + optionale Einzelteile.
- * - Geo-Koordinaten optional (werden via Geocoding gesetzt).
+ * Represents a Participant that can be associated with events.
+ * - Has a required ID and name.
+ * - Optionally, an email.
+ */
+export interface Participant {
+    _id: Id;          // Unique ID for the participant
+    name: string;     // Name of the participant
+    email?: string;   // Optional email of the participant
+}
+
+/**
+ * Event object as used on the frontend.
+ * - `tags` and `participants` can be either IDs or fully populated objects.
+ * - Address can be sent as a combined string and optionally with individual address components.
+ * - Geo-coordinates are optional (can be set through geocoding).
  */
 export interface Event {
-    _id: Id;
+    _id: Id;              // Unique ID for the event
 
-    title: string;
-    description?: string;
+    title: string;        // Title of the event
+    description?: string; // Optional description of the event
 
-    // Kombinierte Adresse: "Musterstraße 1, 12345 Berlin"
-    location: string;
+    location: string;     // Combined address as a string (e.g., "Street 1, 12345 City")
 
-    // ISO-String (Date wird serverseitig zu Date konvertiert)
-    date: string;
+    date: string;         // Event date (ISO string, server will convert to Date)
 
-    imageUrl?: string;
+    imageUrl?: string;    // Optional image URL associated with the event
 
-    tags: Array<Ref<Tag>>;
-    participants: Array<Ref<Participant>>;
+    tags: Array<Ref<Tag>>;           // Array of tags, each can be either a tag ID or a populated tag object
+    participants: Array<Ref<Participant>>;  // Array of participants, each can be either an ID or a populated participant object
 
-    // Freestyle-Feature: abgeleitete Geo-Daten
-    lat?: number;
-    lon?: number;
+    lat?: number;         // Optional latitude, set via geocoding
+    lon?: number;         // Optional longitude, set via geocoding
 
-    // Optional: Einzelteile der Adresse (falls im Backend mitpersistiert)
     street?: string;
     houseNumber?: string;
     postalCode?: string;
@@ -55,81 +59,92 @@ export interface Event {
 }
 
 /* ======================
- * Form-/API-DTOs (FE)
+ * Form/API DTOs (Frontend)
  * ====================== */
 
-/** Payload zum Erstellen aus dem Formular (Frontend → Backend) */
+/**
+ * Payload used for creating an event from the frontend form.
+ * - The combined address is sent as `location`, while individual components are also included.
+ * - Optional image URL, tags, and participants.
+ */
 export interface EventCreatePayload {
-    title: string;
-    description?: string;
+    title: string;         // Event title (required)
+    description?: string;  // Optional event description
 
-    // Kombinierte Adresse wird im Form zusammengebaut und als `location` gesendet:
-    location: string;
+    location: string;      // Combined address (street + house number, postal code, city)
+    street: string;        // Individual address component (street)
+    houseNumber: string;   // Individual address component (house number)
+    postalCode: string;    // Individual address component (postal code)
+    city: string;          // Individual address component (city)
 
-    // Einzelteile zusätzlich mitsenden (Backend kann sie speichern/validieren)
-    street: string;
-    houseNumber: string;
-    postalCode: string;
-    city: string;
+    date: string;          // Event date (e.g., "2025-10-20T15:00")
 
-    date: string;            // e.g. "2025-10-20T15:00"
-    imageUrl?: string;
+    imageUrl?: string;     // Optional image URL for the event
 
-    tags?: Id[];             // als IDs
-    participants?: Id[];     // als IDs
+    tags?: Id[];           // Array of tag IDs (optional)
+    participants?: Id[];   // Array of participant IDs (optional)
 }
 
-/** Payload für Updates (nur Felder, die sich ändern) */
+/**
+ * Payload for updating an event.
+ * - Only the fields that change are included, making it a partial DTO.
+ * - Tags and participants can be updated along with individual address parts.
+ */
 export type EventUpdatePayload = Partial<
     Omit<EventCreatePayload, 'street' | 'houseNumber' | 'postalCode' | 'city'>
 > & {
-    // Beim Update können auch nur Einzelteile kommen, die zu `location` kombiniert werden
+    // Address components can also be provided individually for updates
     street?: string;
     houseNumber?: string;
     postalCode?: string;
     city?: string;
 
-    // Freestyle-Feature: Koordinaten ggf. direkt aktualisieren
+    // Optional update of geo-coordinates (latitude and longitude)
     lat?: number;
     lon?: number;
 };
 
 /* ===========================
- * Wetter-Feature: API-Types
+ * Weather Feature: API Types
  * =========================== */
 
 /**
- * Antwort des Wetter-Endpunkts:
- * GET /api/events/:id/weather?date=YYYY-MM-DD
+ * Response format for the weather API endpoint.
+ * Used to retrieve weather data for an event on a given date.
  */
 export interface WeatherSummary {
-    eventId?: Id;
-    available: boolean;
+    eventId?: Id;            // ID of the event this weather data is related to
+    available: boolean;      // Whether the weather forecast is available for the given date
 
-    date?: string;                // YYYY-MM-DD
-    tempMin?: number;             // °C
-    tempMax?: number;             // °C
-    precipitationChance?: number; // %
-    icon?: string;                // OWM-Icon-Code (z.B. "04d")
-    description?: string;         // Kurzbeschreibung (z.B. "clouds")
-    source?: string;              // "OpenWeatherMap 5-day/3-hour forecast"
+    date?: string;           // Date of the weather forecast (YYYY-MM-DD)
+    tempMin?: number;        // Minimum temperature in °C
+    tempMax?: number;        // Maximum temperature in °C
+    precipitationChance?: number; // Chance of precipitation (percentage)
+    icon?: string;           // Icon representing the weather (OpenWeatherMap icon code, e.g., "04d")
+    description?: string;    // Short description (e.g., "cloudy")
+    source?: string;         // Source of the weather data (e.g., "OpenWeatherMap 5-day/3-hour forecast")
 
-    // Zur Anzeige/Debug hilfreich
-    lat?: number;
-    lon?: number;
-    note?: string;                // z.B. wenn kein Forecast verfügbar
+    lat?: number;            // Latitude for the location of the weather data
+    lon?: number;            // Longitude for the location of the weather data
+    note?: string;           // Helpful note (e.g., "No forecast available")
 }
 
 /* ===========================
- * Hilfs-Typwächter (optional)
+ * Helper Type Guards (optional)
  * =========================== */
 
-/** Prüft, ob ein Wert ein populiertes Objekt (= mit _id) ist. */
+/**
+ * Checks if a value is a populated object (i.e., it has an `_id` field).
+ * Used to differentiate between a populated object and just an ID reference.
+ */
 export function isPopulated<T extends { _id: Id }>(val: Ref<T>): val is T {
     return typeof val === 'object' && val !== null && '_id' in val;
 }
 
-/** Extrahiert die ID aus einer Ref (egal ob ID oder populiertes Objekt). */
+/**
+ * Extracts the ID from a reference (either a populated object or a raw ID).
+ * Returns the ID as a string.
+ */
 export function refId<T extends { _id: Id }>(val: Ref<T>): Id {
     return (isPopulated(val) ? val._id : val) as Id;
 }

@@ -18,6 +18,7 @@ events.post('/',      EventController.create);
 events.get('/:id',    EventController.get);
 events.put('/:id',    EventController.update);
 events.delete('/:id', EventController.remove);
+events.delete('/', EventController.bulkRemove);
 
 // Relations
 events.post('/:id/tags/:tagId',                   EventController.addTag);

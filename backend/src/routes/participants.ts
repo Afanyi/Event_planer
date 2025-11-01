@@ -7,3 +7,4 @@ participants.get('/:id',   ParticipantController.get);
 participants.post('/',     ParticipantController.create);
 participants.put('/:id',   ParticipantController.update);
 participants.delete('/:id',ParticipantController.remove);
+participants.delete('/', ParticipantController.removeBulk);

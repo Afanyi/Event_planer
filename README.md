@@ -144,7 +144,7 @@ docker compose up --build
 
 4. Open
 
-* API: [http://localhost:4000](http://localhost:4000)
+* API: [http://localhost:4000/api/health](http://localhost:4000/api/health)
 * Frontend: [http://localhost:5173](http://localhost:5173)
 
 5. Stop & clean
