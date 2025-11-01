@@ -144,7 +144,8 @@ docker compose up --build
 
 4. Open
 
-* API: [http://localhost:4000/api/health](http://localhost:4000/api/health)
+* Health: [http://localhost:4000/api/health](http://localhost:4000/api/health)
+* API: [http://localhost:4000/api](http://localhost:4000/api)
 * Frontend: [http://localhost:5173](http://localhost:5173)
 
 5. Stop & clean
@@ -385,7 +386,7 @@ frontend:test:
 
 ## Contributing
 
-PRs are welcome! Please:
+Afanyi Blasius Fornge
 
 1. Create a feature branch
 2. Add/adjust tests
@@ -404,3 +405,5 @@ MIT © Contributors
 * Keep `.env.example` in sync with code defaults
 * Bind Mongo to `127.0.0.1` only for local safety
 * freestyle feature only works for adresses in Germany
+* did add input checks on modifications frontend with a suitable message because of growing complexity
+* but an error will be returned if invalid or repeated value inserted
