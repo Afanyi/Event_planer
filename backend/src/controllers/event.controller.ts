@@ -111,6 +111,24 @@ export const EventController = {
     ),
 
     /**
+     * DELETE /events
+     * Bulk delete: remove many events in one request.
+     * Body: { ids: string[] }
+     * Response: { deletedCount, invalidIds, missingIds }
+     */
+    bulkRemove: asyncHandler(async (req: Request, res: Response) => {
+        const ids = req.body?.ids;
+        if (!Array.isArray(ids)) {
+            return res.status(400).json({ error: 'Body must be { ids: string[] }' });
+        }
+        if (ids.length === 0) {
+            return res.status(400).json({ error: 'ids must not be empty' });
+        }
+        const result = await EventService.bulkRemove(ids);
+        return res.status(200).json(result);
+    }),
+
+    /**
      * GET /tags/:tagId/events
      * Returns all events associated with a specific tag.
      */

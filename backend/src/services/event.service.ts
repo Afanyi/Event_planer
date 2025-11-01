@@ -132,6 +132,13 @@ function mapIdStrings(ids?: string[]) {
 
 /* ----------------------------- Event Service Logic ----------------------------- */
 
+/** Ergebnisstruktur für Bulk-Delete */
+export type BulkDeleteResult = {
+    deletedCount: number;
+    invalidIds: string[];  // keine gültigen ObjectIds
+    missingIds: string[];  // gültig, aber kein Dokument vorhanden
+};
+
 export const EventService = {
 
     /**
@@ -259,6 +266,40 @@ export const EventService = {
         if (!del) throw AppError.notFound('Event not found');
         return { ok: true };
     },
+
+    async bulkRemove(ids: string[]): Promise<BulkDeleteResult> {
+        if (!Array.isArray(ids)) {
+            throw AppError.badRequest('Body must be { ids: string[] }');
+        }
+        if (ids.length === 0) {
+            throw AppError.badRequest('ids must not be empty');
+        }
+
+        const invalidIds: string[] = [];
+        const validIds: string[] = [];
+        for (const id of ids) {
+            if (Types.ObjectId.isValid(id)) validIds.push(id);
+            else invalidIds.push(id);
+        }
+
+        // Existierende Dokumente ermitteln
+        const existingDocs = await Event.find({ _id: { $in: validIds } })
+            .select('_id')
+            .lean()
+            .exec();
+        const existingSet = new Set(existingDocs.map(d => String(d._id)));
+        const missingIds = validIds.filter(id => !existingSet.has(id));
+
+        // Löschen der existierenden IDs
+        const delRes = await Event.deleteMany({ _id: { $in: Array.from(existingSet) } }).exec();
+
+        return {
+            deletedCount: delRes.deletedCount ?? 0,
+            invalidIds,
+            missingIds,
+        };
+    },
+
 
     /**
      * Adds a tag to an event (if not already present).
