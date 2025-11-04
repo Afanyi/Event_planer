@@ -12,37 +12,37 @@ Minimal full‑stack app to **create, view, filter, and manage events** (title, 
 
 ## Table of Contents
 
-* [Features](#features)
-* [Architecture](#architecture)
-* [Tech Stack](#tech-stack)
-* [Project Structure](#project-structure)
-* [Quick Start](#quick-start)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+  - [Run with Docker Compose](#run-with-docker-compose)
+  - [Local Development (without Docker)](#local-development-without-docker)
 
-    * [Run with Docker Compose](#run-with-docker-compose)
-    * [Local Development (without Docker)](#local-development-without-docker)
-* [Configuration](#configuration)
-* [API](#api)
+- [Configuration](#configuration)
+- [API](#api)
+  - [Data Model](#data-model)
+  - [Endpoints](#endpoints)
+  - [Query & Filter Examples](#query--filter-examples)
 
-    * [Data Model](#data-model)
-    * [Endpoints](#endpoints)
-    * [Query & Filter Examples](#query--filter-examples)
-* [Testing](#testing)
-* [CI/CD (GitLab)](#cicd-gitlab)
-* [Troubleshooting](#troubleshooting)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
+- [Testing](#testing)
+- [CI/CD (GitLab)](#cicd-gitlab)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
 ## Features
 
-* CRUD for Events (+ tags & participants)
-* Search & filters (query string, date range, location, tags)
-* Optional **derived geo fields** and **forecast summary** (OpenWeatherMap)
-* **TypeScript** across the stack (Node/Express/Mongoose + React/Vite)
-* **Dockerized** services (backend, database, frontend, tests)
-* **Unit & Integration tests** (backend and frontend)
+- CRUD for Events (+ tags & participants)
+- Search & filters (query string, date range, location, tags)
+- Optional **derived geo fields** and **forecast summary** (OpenWeatherMap)
+- **TypeScript** across the stack (Node/Express/Mongoose + React/Vite)
+- **Dockerized** services (backend, database, frontend, tests)
+- **Unit & Integration tests** (backend and frontend)
 
 ## Architecture
 
@@ -59,17 +59,17 @@ Minimal full‑stack app to **create, view, filter, and manage events** (title, 
 
 **Local URLs**
 
-* Backend API: `http://localhost:4000`
-* Frontend UI: `http://localhost:5173`
-* MongoDB (Compass/CLI): `mongodb://127.0.0.1:27018`
+- Backend API: `http://localhost:4000`
+- Frontend UI: `http://localhost:5173`
+- MongoDB (Compass/CLI): `mongodb://127.0.0.1:27018`
 
 ## Tech Stack
 
-* **Backend:** Node.js 20+, Express, Mongoose, TypeScript
-* **Frontend:** React 18, Vite, TypeScript
-* **DB:** MongoDB 7 (named Docker volume for persistence)
-* **Tests:** Jest, Supertest, Testing Library, mongodb-memory-server
-* **Infra:** Docker, Docker Compose, (optional) GitLab CI
+- **Backend:** Node.js 20+, Express, Mongoose, TypeScript
+- **Frontend:** React 18, Vite, TypeScript
+- **DB:** MongoDB 7 (named Docker volume for persistence)
+- **Tests:** Jest, Supertest, Testing Library, mongodb-memory-server
+- **Infra:** Docker, Docker Compose, (optional) GitLab CI
 
 ## Project Structure
 
@@ -133,8 +133,8 @@ cd fwe-ws-25-26-1126782
 
 2. Configure environment
 
-* Copy `backend/.env.example` to `backend/.env` and set values (see [Configuration](#configuration))
-* Ensure you have an **OpenWeatherMap API key** if you want the freestyle feature
+- Copy `backend/.env.example` to `backend/.env` and set values (see [Configuration](#configuration))
+- Ensure you have an **OpenWeatherMap API key** if you want the freestyle feature
 
 3. Build & start
 
@@ -144,9 +144,9 @@ docker compose up --build
 
 4. Open
 
-* Health: [http://localhost:4000/api/health](http://localhost:4000/api/health)
-* API: [http://localhost:4000/api](http://localhost:4000/api)
-* Frontend: [http://localhost:5173](http://localhost:5173)
+- Health: [http://localhost:4000/api/health](http://localhost:4000/api/health)
+- API: [http://localhost:4000/api](http://localhost:4000/api)
+- Frontend: [http://localhost:5173](http://localhost:5173)
 
 5. Stop & clean
 
@@ -194,12 +194,12 @@ npm run dev            # Vite at http://localhost:5173
 
 **Notes**
 
-* Keep the MongoDB service bound to `127.0.0.1:27018` for local safety (not public).
-* If `OWM_API_KEY` is absent, the API will skip forecast enrichment.
+- Keep the MongoDB service bound to `127.0.0.1:27018` for local safety (not public).
+- If `OWM_API_KEY` is absent, the API will skip forecast enrichment.
 
 ### Frontend Build‑Time Config
 
-* `VITE_API_BASE` (build arg) → Base URL for API (e.g. `http://localhost:4000`).
+- `VITE_API_BASE` (build arg) → Base URL for API (e.g. `http://localhost:4000`).
 
 **Example Docker build**
 
@@ -237,9 +237,9 @@ docker build -t events-frontend --build-arg VITE_API_BASE=http://localhost:4000 
 
 **Typical Indexes**
 
-* `datetime` (for range queries)
-* `tags` (multikey)
-* text index on `title` + `description`
+- `datetime` (for range queries)
+- `tags` (multikey)
+- text index on `title` + `description`
 
 ### Endpoints
 
@@ -247,31 +247,31 @@ Base path: `/api`
 
 **GET** `/api/events`
 
-* Query params: `q`, `from`, `to`, `tag`, `location`
-* Returns: paged list of events
+- Query params: `q`, `from`, `to`, `tag`, `location`
+- Returns: paged list of events
 
 **GET** `/api/events/:id`
 
-* Returns a single event
+- Returns a single event
 
 **POST** `/api/events`
 
-* Body: event payload (see model). If `location` present, backend may derive `lat/lon` and optional `forecast` when `OWM_API_KEY` is set.
+- Body: event payload (see model). If `location` present, backend may derive `lat/lon` and optional `forecast` when `OWM_API_KEY` is set.
 
 **PUT/PATCH** `/api/events/:id`
 
-* Update an existing event
+- Update an existing event
 
 **DELETE** `/api/events/:id`
 
-* Delete an event
+- Delete an event
 
 **Responses & Errors**
 
-* `200/201` success, `204` no content
-* `400` invalid payload, `404` not found
-* `422` validation error
-* `500` server error
+- `200/201` success, `204` no content
+- `400` invalid payload, `404` not found
+- `422` validation error
+- `500` server error
 
 ### Query & Filter Examples
 
@@ -311,8 +311,8 @@ npm test          # unit + integration (configured via jest*.ts)
 npm run test:ci   # CI mode with coverage + JUnit (jest-junit)
 ```
 
-* Integration tests use **mongodb-memory-server** (no external DB required).
-* JUnit XML is written to `reports/` for CI integration.
+- Integration tests use **mongodb-memory-server** (no external DB required).
+- JUnit XML is written to `reports/` for CI integration.
 
 **Frontend**
 
@@ -370,19 +370,20 @@ frontend:test:
 
 ## Troubleshooting
 
-* **Mongo connection refused**: ensure Mongo is running and `MONGO_URI` matches `mongodb://127.0.0.1:27018/eventsdb` for local dev.
-* **CORS errors**: set `CORS_ORIGIN` to the exact frontend origin (e.g. `http://localhost:5173`).
-* **Weather not showing**: verify `OWM_API_KEY`, check API rate limits, and confirm `datetime` is in ISO (UTC) format.
-* **Port in use**: change `PORT` or stop the service occupying it.
-* **Dirty dev DB**: `docker compose down -v` to reset; beware it deletes your data.
-* **Timezones**: store and compare in UTC. Convert for display in the frontend.
+- **Mongo connection refused**: ensure Mongo is running and `MONGO_URI` matches `mongodb://127.0.0.1:27018/eventsdb` for local dev.
+- **CORS errors**: set `CORS_ORIGIN` to the exact frontend origin (e.g. `http://localhost:5173`).
+- **Weather not showing**: verify `OWM_API_KEY`, check API rate limits, and confirm `datetime` is in ISO (UTC) format.
+- **Port in use**: change `PORT` or stop the service occupying it.
+- **Dirty dev DB**: `docker compose down -v` to reset; beware it deletes your data.
+- **Timezones**: store and compare in UTC. Convert for display in the frontend.
 
 ## Roadmap
-* creating docker setup
-* folder setup and creating routes
-* sorting parameters
-* Map preview (MapLibre/Leaflet) for `lat/lon`
-* OpenAPI spec
+
+- creating docker setup
+- folder setup and creating routes
+- sorting parameters
+- Map preview (MapLibre/Leaflet) for `lat/lon`
+- OpenAPI spec
 
 ## Contributing
 
@@ -392,18 +393,18 @@ Afanyi Blasius Fornge
 2. Add/adjust tests
 3. Run tests locally
 
-
 ## License
 
 MIT © Contributors
-* Afanyi Blasius Fornge
+
+- Afanyi Blasius Fornge
 
 ---
 
 ### Maintainers’ Notes
 
-* Keep `.env.example` in sync with code defaults
-* Bind Mongo to `127.0.0.1` only for local safety
-* freestyle feature only works for adresses in Germany
-* did add input checks on modifications frontend with a suitable message because of growing complexity
-* but an error will be returned if invalid or repeated value inserted
+- Keep `.env.example` in sync with code defaults
+- Bind Mongo to `127.0.0.1` only for local safety
+- freestyle feature only works for adresses in Germany
+- did add input checks on modifications frontend with a suitable message because of growing complexity
+- but an error will be returned if invalid or repeated value inserted

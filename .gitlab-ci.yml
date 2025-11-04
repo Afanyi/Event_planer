@@ -33,7 +33,7 @@ test_backend:
 # ============ TEST (backend integration tests) ============
 test_backend_int:
   stage: test
-  image: node:20   # Debian-based; needed for mongodb-memory-server download
+  image: node:20 # Debian-based; needed for mongodb-memory-server download
   cache:
     key:
       files:

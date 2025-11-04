@@ -1,9 +1,9 @@
 // backend/src/services/event.service.ts
-import { Types } from 'mongoose';
-import { Event } from '../models/Event';
-import { Tag } from '../models/Tag';
-import { Participant } from '../models/Participant';
-import { AppError } from '../utils/errors';
+import { Types } from "mongoose";
+import { Event } from "../models/Event";
+import { Tag } from "../models/Tag";
+import { Participant } from "../models/Participant";
+import { AppError } from "../utils/errors";
 
 /**
  * Query type definition
@@ -11,13 +11,13 @@ import { AppError } from '../utils/errors';
  * Represents the optional query parameters used for filtering event searches.
  */
 export type Query = {
-    q?: string;                 // Text search query (matches title/description)
-    from?: string;              // Start date filter
-    to?: string;                // End date filter
-    location?: string;          // Partial location match
-    participant?: string;       // Participant ID or name/email
-    tag?: string;               // Single tag ID
-    tags?: string | string[];   // Multiple tag names (comma-separated or array)
+  q?: string; // Text search query (matches title/description)
+  from?: string; // Start date filter
+  to?: string; // End date filter
+  location?: string; // Partial location match
+  participant?: string; // Participant ID or name/email
+  tag?: string; // Single tag ID
+  tags?: string | string[]; // Multiple tag names (comma-separated or array)
 };
 
 /**
@@ -25,7 +25,7 @@ export type Query = {
  * Returns undefined if input is invalid or missing.
  */
 function parseDate(date: string | Date | undefined) {
-    return date ? new Date(date) : undefined;
+  return date ? new Date(date) : undefined;
 }
 
 /**
@@ -34,20 +34,20 @@ function parseDate(date: string | Date | undefined) {
  * Defines the fields allowed during event creation.
  */
 export type EventCreateDTO = {
-    title: string;              // Event title (required)
-    description?: string;       // Optional description
-    location: string;           // Full address string (e.g., "Street 1, 12345 City")
-    date: string | Date;        // Date of the event
-    imageUrl?: string;          // Optional image
-    tags?: string[];            // Array of tag IDs
-    participants?: string[];    // Array of participant IDs
-    lat?: number;               // Latitude (from geocoding)
-    lon?: number;               // Longitude (from geocoding)
-    // Optional detailed address fields
-    street?: string;
-    houseNumber?: string;
-    postalCode?: string;
-    city?: string;
+  title: string; // Event title (required)
+  description?: string; // Optional description
+  location: string; // Full address string (e.g., "Street 1, 12345 City")
+  date: string | Date; // Date of the event
+  imageUrl?: string; // Optional image
+  tags?: string[]; // Array of tag IDs
+  participants?: string[]; // Array of participant IDs
+  lat?: number; // Latitude (from geocoding)
+  lon?: number; // Longitude (from geocoding)
+  // Optional detailed address fields
+  street?: string;
+  houseNumber?: string;
+  postalCode?: string;
+  city?: string;
 };
 
 /**
@@ -64,8 +64,8 @@ export type EventUpdateDTO = Partial<EventCreateDTO>;
  * Returns undefined if invalid.
  */
 function toObjectId(id?: string | null) {
-    if (!id) return undefined;
-    return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : undefined;
+  if (!id) return undefined;
+  return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : undefined;
 }
 
 /**
@@ -73,8 +73,8 @@ function toObjectId(id?: string | null) {
  * Escapes special regex characters to avoid unintended patterns.
  */
 function toRegexContains(s?: string) {
-    if (!s) return undefined;
-    return new RegExp(String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+  if (!s) return undefined;
+  return new RegExp(String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 }
 
 /**
@@ -85,18 +85,18 @@ function toRegexContains(s?: string) {
  * Returns an array of matching participant ObjectIds.
  */
 async function resolveParticipantIds(q?: string) {
-    if (!q) return undefined;
+  if (!q) return undefined;
 
-    // 1) Try as direct ObjectId
-    const asId = toObjectId(q);
-    if (asId) return [asId];
+  // 1) Try as direct ObjectId
+  const asId = toObjectId(q);
+  if (asId) return [asId];
 
-    // 2) Otherwise search by name/email
-    const re = toRegexContains(q);
-    const found = await Participant.find(
-        re ? { $or: [{ name: re }, { email: re }] } : {}
-    ).select('_id');
-    return found.map((p) => p._id);
+  // 2) Otherwise search by name/email
+  const re = toRegexContains(q);
+  const found = await Participant.find(
+    re ? { $or: [{ name: re }, { email: re }] } : {},
+  ).select("_id");
+  return found.map((p) => p._id);
 }
 
 /**
@@ -104,10 +104,10 @@ async function resolveParticipantIds(q?: string) {
  * Handles arrays or comma-separated strings.
  */
 function collectStrings(v: unknown): string[] {
-    if (v == null) return [];
-    return (Array.isArray(v) ? v : String(v).split(','))
-        .map((s) => s.trim())
-        .filter(Boolean);
+  if (v == null) return [];
+  return (Array.isArray(v) ? v : String(v).split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -115,11 +115,13 @@ function collectStrings(v: unknown): string[] {
  * Accepts a single string or array of strings.
  */
 async function resolveTagIdsByNames(names?: string | string[]) {
-    const arr = collectStrings(names);
-    if (!arr.length) return undefined;
-    const regexes = arr.map((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
-    const docs = await Tag.find({ name: { $in: regexes } }).select('_id');
-    return docs.map((t) => t._id);
+  const arr = collectStrings(names);
+  if (!arr.length) return undefined;
+  const regexes = arr.map(
+    (n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
+  );
+  const docs = await Tag.find({ name: { $in: regexes } }).select("_id");
+  return docs.map((t) => t._id);
 }
 
 /**
@@ -127,242 +129,252 @@ async function resolveTagIdsByNames(names?: string | string[]) {
  * Filters out invalid IDs automatically.
  */
 function mapIdStrings(ids?: string[]) {
-    return (ids ?? []).map(toObjectId).filter(Boolean) as Types.ObjectId[];
+  return (ids ?? []).map(toObjectId).filter(Boolean) as Types.ObjectId[];
 }
 
 /* ----------------------------- Event Service Logic ----------------------------- */
 
 /** Ergebnisstruktur für Bulk-Delete */
 export type BulkDeleteResult = {
-    deletedCount: number;
-    invalidIds: string[];  // keine gültigen ObjectIds
-    missingIds: string[];  // gültig, aber kein Dokument vorhanden
+  deletedCount: number;
+  invalidIds: string[]; // keine gültigen ObjectIds
+  missingIds: string[]; // gültig, aber kein Dokument vorhanden
 };
 
 export const EventService = {
+  /**
+   * Lists all events matching the given filters.
+   * Supports:
+   * - Text search (`q`) on title/description
+   * - Date range (`from`, `to`)
+   * - Partial location match
+   * - Filtering by participant ID or name/email
+   * - Filtering by tag ID or tag name(s)
+   */
+  async list(query: Query) {
+    const { q, from, to, location, participant, tag, tags } = query;
+    const filter: Record<string, any> = {};
 
-    /**
-     * Lists all events matching the given filters.
-     * Supports:
-     * - Text search (`q`) on title/description
-     * - Date range (`from`, `to`)
-     * - Partial location match
-     * - Filtering by participant ID or name/email
-     * - Filtering by tag ID or tag name(s)
-     */
-    async list(query: Query) {
-        const { q, from, to, location, participant, tag, tags } = query;
-        const filter: Record<string, any> = {};
+    // Simple text search in title or description
+    if (q) {
+      const re = toRegexContains(q);
+      if (re) filter.$or = [{ title: re }, { description: re }];
+    }
 
-        // Simple text search in title or description
-        if (q) {
-            const re = toRegexContains(q);
-            if (re) filter.$or = [{ title: re }, { description: re }];
-        }
+    // Date range filtering
+    if (from || to) {
+      filter.date = {};
+      if (from) {
+        const fromDate = parseDate(from);
+        if (fromDate) filter.date.$gte = fromDate;
+      }
+      if (to) {
+        const toDate = parseDate(to);
+        if (toDate) filter.date.$lte = toDate;
+      }
+    }
 
-        // Date range filtering
-        if (from || to) {
-            filter.date = {};
-            if (from) {
-                const fromDate = parseDate(from);
-                if (fromDate) filter.date.$gte = fromDate;
-            }
-            if (to) {
-                const toDate = parseDate(to);
-                if (toDate) filter.date.$lte = toDate;
-            }
-        }
+    // Location substring match
+    if (location) filter.location = { $regex: String(location), $options: "i" };
 
-        // Location substring match
-        if (location) filter.location = { $regex: String(location), $options: 'i' };
+    // Filter by participant (ID or name/email)
+    if (participant) {
+      const partIds = await resolveParticipantIds(participant);
+      if (!partIds || partIds.length === 0) return [];
+      filter.participants = { $in: partIds };
+    }
 
-        // Filter by participant (ID or name/email)
-        if (participant) {
-            const partIds = await resolveParticipantIds(participant);
-            if (!partIds || partIds.length === 0) return [];
-            filter.participants = { $in: partIds };
-        }
+    // Filter by tag ID
+    if (tag) {
+      const tid = toObjectId(tag);
+      if (tid) filter.tags = { $in: [tid] };
+      else return []; // invalid ID → no results
+    }
 
-        // Filter by tag ID
-        if (tag) {
-            const tid = toObjectId(tag);
-            if (tid) filter.tags = { $in: [tid] };
-            else return []; // invalid ID → no results
-        }
+    // Filter by tag names
+    if (tags) {
+      const tagIdsByNames = await resolveTagIdsByNames(tags);
+      if (!tagIdsByNames || tagIdsByNames.length === 0) return [];
+      filter.tags = { $in: tagIdsByNames };
+    }
 
-        // Filter by tag names
-        if (tags) {
-            const tagIdsByNames = await resolveTagIdsByNames(tags);
-            if (!tagIdsByNames || tagIdsByNames.length === 0) return [];
-            filter.tags = { $in: tagIdsByNames };
-        }
+    // Query database and populate references (tags and participants)
+    return Event.find(filter)
+      .populate("tags participants")
+      .sort({ date: 1 }) // sort by date ascending
+      .lean(); // returns plain JS objects (not Mongoose docs)
+  },
 
-        // Query database and populate references (tags and participants)
-        return Event.find(filter)
-            .populate('tags participants')
-            .sort({ date: 1 }) // sort by date ascending
-            .lean();            // returns plain JS objects (not Mongoose docs)
-    },
+  /**
+   * Retrieves a single event by its ID.
+   * Throws 400 if the ID is invalid and 404 if not found.
+   */
+  async get(id: string) {
+    if (!Types.ObjectId.isValid(id))
+      throw AppError.badRequest("Invalid event id");
+    const doc = await Event.findById(id).populate("tags participants").lean();
+    if (!doc) throw AppError.notFound("Event not found");
+    return doc;
+  },
 
-    /**
-     * Retrieves a single event by its ID.
-     * Throws 400 if the ID is invalid and 404 if not found.
-     */
-    async get(id: string) {
-        if (!Types.ObjectId.isValid(id)) throw AppError.badRequest('Invalid event id');
-        const doc = await Event.findById(id).populate('tags participants').lean();
-        if (!doc) throw AppError.notFound('Event not found');
-        return doc;
-    },
+  /**
+   * Creates a new event document.
+   * Validates required fields, converts date, and maps tag/participant IDs.
+   */
+  async create(input: EventCreateDTO) {
+    if (!input?.title) throw AppError.badRequest("title is required");
+    if (!input?.date) throw AppError.badRequest("date is required");
+    if (!input?.location) throw AppError.badRequest("location is required");
 
-    /**
-     * Creates a new event document.
-     * Validates required fields, converts date, and maps tag/participant IDs.
-     */
-    async create(input: EventCreateDTO) {
-        if (!input?.title) throw AppError.badRequest('title is required');
-        if (!input?.date) throw AppError.badRequest('date is required');
-        if (!input?.location) throw AppError.badRequest('location is required');
+    const created = await Event.create({
+      ...input,
+      date: new Date(input.date),
+      tags: mapIdStrings(input.tags),
+      participants: mapIdStrings(input.participants),
+    } as any);
 
-        const created = await Event.create({
-            ...input,
-            date: new Date(input.date),
-            tags: mapIdStrings(input.tags),
-            participants: mapIdStrings(input.participants),
-        } as any);
+    // Populate references before returning
+    return created.populate("tags participants");
+  },
 
-        // Populate references before returning
-        return created.populate('tags participants');
-    },
+  /**
+   * Updates an existing event by its ID.
+   * - Converts date field to Date
+   * - Converts tags and participants to ObjectIds
+   */
+  async update(id: string, input: EventUpdateDTO) {
+    if (!Types.ObjectId.isValid(id))
+      throw AppError.badRequest("Invalid event id");
 
-    /**
-     * Updates an existing event by its ID.
-     * - Converts date field to Date
-     * - Converts tags and participants to ObjectIds
-     */
-    async update(id: string, input: EventUpdateDTO) {
-        if (!Types.ObjectId.isValid(id)) throw AppError.badRequest('Invalid event id');
+    const payload: any = { ...input };
+    if (input.date) payload.date = new Date(input.date);
+    if (input.tags) payload.tags = mapIdStrings(input.tags);
+    if (input.participants)
+      payload.participants = mapIdStrings(input.participants);
 
-        const payload: any = { ...input };
-        if (input.date) payload.date = new Date(input.date);
-        if (input.tags) payload.tags = mapIdStrings(input.tags);
-        if (input.participants) payload.participants = mapIdStrings(input.participants);
+    const updated = await Event.findByIdAndUpdate(id, payload, {
+      new: true, // return updated document
+      runValidators: true, // run schema validation
+    }).populate("tags participants");
 
-        const updated = await Event.findByIdAndUpdate(id, payload, {
-            new: true,             // return updated document
-            runValidators: true,   // run schema validation
-        }).populate('tags participants');
+    if (!updated) throw AppError.notFound("Event not found");
+    return updated;
+  },
 
-        if (!updated) throw AppError.notFound('Event not found');
-        return updated;
-    },
+  /**
+   * Deletes an event by its ID.
+   */
+  async remove(id: string) {
+    if (!Types.ObjectId.isValid(id))
+      throw AppError.badRequest("Invalid event id");
+    const del = await Event.findByIdAndDelete(id);
+    if (!del) throw AppError.notFound("Event not found");
+    return { ok: true };
+  },
 
-    /**
-     * Deletes an event by its ID.
-     */
-    async remove(id: string) {
-        if (!Types.ObjectId.isValid(id)) throw AppError.badRequest('Invalid event id');
-        const del = await Event.findByIdAndDelete(id);
-        if (!del) throw AppError.notFound('Event not found');
-        return { ok: true };
-    },
+  async bulkRemove(ids: string[]): Promise<BulkDeleteResult> {
+    if (!Array.isArray(ids)) {
+      throw AppError.badRequest("Body must be { ids: string[] }");
+    }
+    if (ids.length === 0) {
+      throw AppError.badRequest("ids must not be empty");
+    }
 
-    async bulkRemove(ids: string[]): Promise<BulkDeleteResult> {
-        if (!Array.isArray(ids)) {
-            throw AppError.badRequest('Body must be { ids: string[] }');
-        }
-        if (ids.length === 0) {
-            throw AppError.badRequest('ids must not be empty');
-        }
+    const invalidIds: string[] = [];
+    const validIds: string[] = [];
+    for (const id of ids) {
+      if (Types.ObjectId.isValid(id)) validIds.push(id);
+      else invalidIds.push(id);
+    }
 
-        const invalidIds: string[] = [];
-        const validIds: string[] = [];
-        for (const id of ids) {
-            if (Types.ObjectId.isValid(id)) validIds.push(id);
-            else invalidIds.push(id);
-        }
+    // Existierende Dokumente ermitteln
+    const existingDocs = await Event.find({ _id: { $in: validIds } })
+      .select("_id")
+      .lean()
+      .exec();
+    const existingSet = new Set(existingDocs.map((d) => String(d._id)));
+    const missingIds = validIds.filter((id) => !existingSet.has(id));
 
-        // Existierende Dokumente ermitteln
-        const existingDocs = await Event.find({ _id: { $in: validIds } })
-            .select('_id')
-            .lean()
-            .exec();
-        const existingSet = new Set(existingDocs.map(d => String(d._id)));
-        const missingIds = validIds.filter(id => !existingSet.has(id));
+    // Löschen der existierenden IDs
+    const delRes = await Event.deleteMany({
+      _id: { $in: Array.from(existingSet) },
+    }).exec();
 
-        // Löschen der existierenden IDs
-        const delRes = await Event.deleteMany({ _id: { $in: Array.from(existingSet) } }).exec();
+    return {
+      deletedCount: delRes.deletedCount ?? 0,
+      invalidIds,
+      missingIds,
+    };
+  },
 
-        return {
-            deletedCount: delRes.deletedCount ?? 0,
-            invalidIds,
-            missingIds,
-        };
-    },
+  /**
+   * Adds a tag to an event (if not already present).
+   * Uses $addToSet to avoid duplicates.
+   */
+  async addTag(eventId: string, tagId: string) {
+    if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(tagId)) {
+      throw AppError.badRequest("Invalid id");
+    }
+    const updated = await Event.findByIdAndUpdate(
+      eventId,
+      { $addToSet: { tags: new Types.ObjectId(tagId) } },
+      { new: true },
+    ).populate("tags participants");
+    if (!updated) throw AppError.notFound("Event not found");
+    return updated;
+  },
 
+  /**
+   * Removes a tag from an event.
+   */
+  async removeTag(eventId: string, tagId: string) {
+    if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(tagId)) {
+      throw AppError.badRequest("Invalid id");
+    }
+    const updated = await Event.findByIdAndUpdate(
+      eventId,
+      { $pull: { tags: new Types.ObjectId(tagId) } },
+      { new: true },
+    ).populate("tags participants");
+    if (!updated) throw AppError.notFound("Event not found");
+    return updated;
+  },
 
-    /**
-     * Adds a tag to an event (if not already present).
-     * Uses $addToSet to avoid duplicates.
-     */
-    async addTag(eventId: string, tagId: string) {
-        if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(tagId)) {
-            throw AppError.badRequest('Invalid id');
-        }
-        const updated = await Event.findByIdAndUpdate(
-            eventId,
-            { $addToSet: { tags: new Types.ObjectId(tagId) } },
-            { new: true }
-        ).populate('tags participants');
-        if (!updated) throw AppError.notFound('Event not found');
-        return updated;
-    },
+  /**
+   * Adds a participant to an event (without duplicates).
+   */
+  async addParticipant(eventId: string, participantId: string) {
+    if (
+      !Types.ObjectId.isValid(eventId) ||
+      !Types.ObjectId.isValid(participantId)
+    ) {
+      throw AppError.badRequest("Invalid id");
+    }
+    const updated = await Event.findByIdAndUpdate(
+      eventId,
+      { $addToSet: { participants: new Types.ObjectId(participantId) } },
+      { new: true },
+    ).populate("tags participants");
+    if (!updated) throw AppError.notFound("Event not found");
+    return updated;
+  },
 
-    /**
-     * Removes a tag from an event.
-     */
-    async removeTag(eventId: string, tagId: string) {
-        if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(tagId)) {
-            throw AppError.badRequest('Invalid id');
-        }
-        const updated = await Event.findByIdAndUpdate(
-            eventId,
-            { $pull: { tags: new Types.ObjectId(tagId) } },
-            { new: true }
-        ).populate('tags participants');
-        if (!updated) throw AppError.notFound('Event not found');
-        return updated;
-    },
-
-    /**
-     * Adds a participant to an event (without duplicates).
-     */
-    async addParticipant(eventId: string, participantId: string) {
-        if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(participantId)) {
-            throw AppError.badRequest('Invalid id');
-        }
-        const updated = await Event.findByIdAndUpdate(
-            eventId,
-            { $addToSet: { participants: new Types.ObjectId(participantId) } },
-            { new: true }
-        ).populate('tags participants');
-        if (!updated) throw AppError.notFound('Event not found');
-        return updated;
-    },
-
-    /**
-     * Removes a participant from an event.
-     */
-    async removeParticipant(eventId: string, participantId: string) {
-        if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(participantId)) {
-            throw AppError.badRequest('Invalid id');
-        }
-        const updated = await Event.findByIdAndUpdate(
-            eventId,
-            { $pull: { participants: new Types.ObjectId(participantId) } },
-            { new: true }
-        ).populate('tags participants');
-        if (!updated) throw AppError.notFound('Event not found');
-        return updated;
-    },
+  /**
+   * Removes a participant from an event.
+   */
+  async removeParticipant(eventId: string, participantId: string) {
+    if (
+      !Types.ObjectId.isValid(eventId) ||
+      !Types.ObjectId.isValid(participantId)
+    ) {
+      throw AppError.badRequest("Invalid id");
+    }
+    const updated = await Event.findByIdAndUpdate(
+      eventId,
+      { $pull: { participants: new Types.ObjectId(participantId) } },
+      { new: true },
+    ).populate("tags participants");
+    if (!updated) throw AppError.notFound("Event not found");
+    return updated;
+  },
 };

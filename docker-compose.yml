@@ -8,7 +8,8 @@ services:
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -37,7 +38,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"   # Host 5173 -> nginx:80
+      - "5173:80" # Host 5173 -> nginx:80
     restart: unless-stopped
     # (keine profiles -> startet standardmäßig mit)
 
