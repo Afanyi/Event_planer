@@ -17,11 +17,12 @@ services:
 
   backend:
     build: ./backend
+    env_file:
+      - ./backend/.env         # ← lädt Variablen aus backend/.env
     environment:
       MONGO_URI: mongodb://mongo:27017/eventsdb
       PORT: "4000"
       CORS_ORIGIN: http://localhost:5173
-      OWM_API_KEY: 2c97e8e170ad99836a6e37a7fe103b7a
     depends_on:
       mongo:
         condition: service_healthy
@@ -42,33 +43,6 @@ services:
     restart: unless-stopped
     # (keine profiles -> startet standardmäßig mit)
 
-  # --- Test-Container (nur bei Bedarf manuell starten) ---
-  backend-test:
-    build:
-      context: ./backend
-    #  target: test  # nur aktivieren, wenn Dockerfile eine "test"-Stage hat
-    environment:
-      CI: "true"
-      JEST_JUNIT_OUTPUT_DIR: /reports
-      JEST_JUNIT_OUTPUT_NAME: junit.xml
-      COVERAGE_DIR: /reports/coverage
-    command: sh -lc "npm run test:ci"
-    ports: []
-    # kein profile -> läuft nur, wenn du ihn explizit aufrufst
-
-  frontend-test:
-    build:
-      context: ./frontend
-      #  target: test
-      args:
-        VITE_API_BASE: http://localhost:4000/api
-    environment:
-      CI: "true"
-      JEST_JUNIT_OUTPUT_DIR: /reports
-      JEST_JUNIT_OUTPUT_NAME: junit.xml
-      COVERAGE_DIR: /reports/coverage
-    command: sh -lc "npm run test:ci"
-    ports: []
 
 volumes:
   mongo_data:

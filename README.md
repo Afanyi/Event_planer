@@ -114,7 +114,7 @@ Minimal full‑stack app to **create, view, filter, and manage events** (title, 
 │  └─ vite.config.ts
 │
 ├─ docker-compose.yml
-├─ .gitlab-ci.yml           # optional CI
+├─ .gitlab-ci.yml           
 └─ README.md
 ```
 
@@ -196,6 +196,7 @@ npm run dev            # Vite at http://localhost:5173
 
 - Keep the MongoDB service bound to `127.0.0.1:27018` for local safety (not public).
 - If `OWM_API_KEY` is absent, the API will skip forecast enrichment.
+- replace xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx with your api key
 
 ### Frontend Build‑Time Config
 
@@ -244,6 +245,9 @@ docker build -t events-frontend --build-arg VITE_API_BASE=http://localhost:4000 
 ### Endpoints
 
 Base path: `/api`
+
+- most important for all apis go to the api link
+- API: [http://localhost:4000/api](http://localhost:4000/api)
 
 **GET** `/api/events`
 
@@ -392,6 +396,7 @@ Afanyi Blasius Fornge
 1. Create a feature branch
 2. Add/adjust tests
 3. Run tests locally
+4. automatic tests on gitlab CI/CD
 
 ## License
 
@@ -406,5 +411,5 @@ MIT © Contributors
 - Keep `.env.example` in sync with code defaults
 - Bind Mongo to `127.0.0.1` only for local safety
 - freestyle feature only works for adresses in Germany
-- did add input checks on modifications frontend with a suitable message because of growing complexity
+- did add input checks on modifications frontend with a suitable message because of growing complexity due to growing complexity and lack of time
 - but an error will be returned if invalid or repeated value inserted

@@ -3,8 +3,7 @@ import fetch from "node-fetch";
 //const fetch = require('node-fetch');
 
 const OWM_BASE = process.env.OWM_BASE ?? "https://api.openweathermap.org";
-//const API_KEY = process.env.OWM_API_KEY!;
-const API_KEY = "2c97e8e170ad99836a6e37a7fe103b7a"; // inoder to run tests faster without docker container
+const API_KEY = process.env.OWM_API_KEY!;
 if (!API_KEY) throw new Error("Missing OWM_API_KEY");
 
 type Geo = { lat: number; lon: number };
